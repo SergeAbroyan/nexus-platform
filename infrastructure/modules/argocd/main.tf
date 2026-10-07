@@ -12,6 +12,17 @@ locals {
         repoURL        = var.gitops_repository
         targetRevision = var.gitops_revision
         path           = var.gitops_chart_path
+        helm = {
+          valuesObject = {
+            platform = {
+              clusterName                    = var.cluster_name
+              awsRegion                      = var.aws_region
+              vpcId                          = var.vpc_id
+              karpenterInterruptionQueueName = var.karpenter_interruption_queue_name
+              karpenterNodeIamRoleName       = var.karpenter_node_iam_role_name
+            }
+          }
+        }
       }
       destination = {
         server    = "https://kubernetes.default.svc"

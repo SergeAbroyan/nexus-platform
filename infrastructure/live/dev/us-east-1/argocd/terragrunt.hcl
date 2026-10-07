@@ -7,6 +7,18 @@ dependency "eks" {
   config_path = "../eks"
 }
 
+dependency "vpc" {
+  config_path = "../vpc"
+}
+
+dependency "karpenter" {
+  config_path = "../karpenter"
+}
+
+dependencies {
+  paths = ["../platform-identity"]
+}
+
 locals {
   environment_config = read_terragrunt_config(find_in_parent_folders("environment.hcl"))
 }
@@ -43,6 +55,12 @@ inputs = {
   gitops_repository = local.environment_config.locals.gitops_repository
   gitops_revision   = local.environment_config.locals.gitops_revision
   gitops_chart_path = local.environment_config.locals.gitops_chart_path
+
+  cluster_name                       = dependency.eks.outputs.cluster_name
+  aws_region                         = include.root.locals.aws_region
+  vpc_id                             = dependency.vpc.outputs.vpc_id
+  karpenter_interruption_queue_name = dependency.karpenter.outputs.interruption_queue_name
+  karpenter_node_iam_role_name       = dependency.karpenter.outputs.node_iam_role_name
 
   controller_resources        = local.environment_config.locals.argocd_controller_resources
   server_resources            = local.environment_config.locals.argocd_server_resources

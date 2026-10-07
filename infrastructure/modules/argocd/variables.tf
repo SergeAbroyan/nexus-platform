@@ -62,6 +62,36 @@ variable "gitops_chart_path" {
   }
 }
 
+variable "cluster_name" {
+  description = "EKS cluster name passed to cluster-aware GitOps components."
+  type        = string
+  nullable    = false
+}
+
+variable "aws_region" {
+  description = "AWS region containing the EKS cluster."
+  type        = string
+  nullable    = false
+}
+
+variable "vpc_id" {
+  description = "VPC ID used by the AWS Load Balancer Controller."
+  type        = string
+  nullable    = false
+}
+
+variable "karpenter_interruption_queue_name" {
+  description = "SQS queue used by Karpenter for interruption events."
+  type        = string
+  nullable    = false
+}
+
+variable "karpenter_node_iam_role_name" {
+  description = "IAM role used by EC2 instances created by Karpenter."
+  type        = string
+  nullable    = false
+}
+
 variable "controller_resources" {
   description = "CPU and memory requests and limits for the Argo CD application controller."
   type = object({
