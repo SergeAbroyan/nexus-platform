@@ -33,7 +33,8 @@ a manually maintained script.
 
 ```text
 VPC ───────────────┐
-                   ├── EKS ──┬── Karpenter
+                   ├── EKS ──┬── Argo CD ── GitOps root
+                             ├── Karpenter
 KMS ───────────────┘         ├── RDS ──────┐
   ├── SQS ───────────────────┤             ├── Platform identities
   └──────────────────────────┼── Valkey ───┤
@@ -104,6 +105,7 @@ outputs for deployment plans because they can hide wiring errors.
 
 ## Deployment boundary
 
-These commands manage AWS infrastructure only. Kubernetes applications and
-platform add-ons are installed later from `nexus-gitops` after EKS and its AWS
-identities exist.
+Terraform installs only the Argo CD GitOps controller after EKS is ready and
+seeds its root application. Argo CD then installs Kubernetes platform add-ons
+and applications from `nexus-gitops`. This keeps the controller in the
+infrastructure lifecycle without moving normal Helm deployments into Terraform.

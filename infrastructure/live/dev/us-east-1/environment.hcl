@@ -108,6 +108,47 @@ locals {
   external_secrets_namespace       = "external-secrets"
   external_secrets_service_account = "external-secrets"
 
+  argocd_namespace        = "argocd"
+  argocd_chart_repository = "https://argoproj.github.io/argo-helm"
+  argocd_chart_version    = "10.9.6"
+
+  gitops_repository = "https://github.com/SergeAbroyan/nexus-gitops.git"
+  gitops_revision   = "main"
+  gitops_chart_path = "bootstrap/root"
+
+  argocd_controller_resources = {
+    requests = {
+      cpu    = "100m"
+      memory = "256Mi"
+    }
+    limits = {
+      cpu    = "500m"
+      memory = "512Mi"
+    }
+  }
+
+  argocd_server_resources = {
+    requests = {
+      cpu    = "50m"
+      memory = "128Mi"
+    }
+    limits = {
+      cpu    = "200m"
+      memory = "256Mi"
+    }
+  }
+
+  argocd_repository_server_resources = {
+    requests = {
+      cpu    = "50m"
+      memory = "128Mi"
+    }
+    limits = {
+      cpu    = "300m"
+      memory = "256Mi"
+    }
+  }
+
   github_owner                     = "SergeAbroyan"
   github_infrastructure_repository = "nexus-platform"
   github_applications_repository   = "nexus-applications"
