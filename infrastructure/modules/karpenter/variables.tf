@@ -52,6 +52,17 @@ variable "enable_spot_interruption" {
   nullable    = false
 }
 
+variable "ebs_kms_key_arn" {
+  description = "KMS key ARN used to encrypt EBS volumes on Karpenter nodes."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.ebs_kms_key_arn))
+    error_message = "The EBS encryption key must be a valid KMS key ARN."
+  }
+}
+
 variable "tags" {
   description = "Additional tags merged with the module's standard tags."
   type        = map(string)

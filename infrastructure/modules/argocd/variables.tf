@@ -92,6 +92,12 @@ variable "karpenter_node_iam_role_name" {
   nullable    = false
 }
 
+variable "ebs_kms_key_arn" {
+  description = "KMS key ARN passed to the Karpenter EC2 node class."
+  type        = string
+  nullable    = false
+}
+
 variable "controller_resources" {
   description = "CPU and memory requests and limits for the Argo CD application controller."
   type = object({

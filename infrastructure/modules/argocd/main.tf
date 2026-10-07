@@ -20,6 +20,7 @@ locals {
               vpcId                          = var.vpc_id
               karpenterInterruptionQueueName = var.karpenter_interruption_queue_name
               karpenterNodeIamRoleName       = var.karpenter_node_iam_role_name
+              ebsKmsKeyArn                   = var.ebs_kms_key_arn
             }
           }
         }

@@ -22,6 +22,31 @@ module "karpenter" {
   node_iam_role_source_account_condition = true
   node_iam_role_attach_cni_policy        = true
 
+  iam_policy_statements = [
+    {
+      sid = "UseEncryptedNodeVolumes"
+      actions = [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:Encrypt",
+        "kms:GenerateDataKeyWithoutPlaintext",
+        "kms:ReEncryptFrom",
+        "kms:ReEncryptTo",
+      ]
+      resources = [var.ebs_kms_key_arn]
+    },
+    {
+      sid       = "CreateEncryptedNodeVolumeGrants"
+      actions   = ["kms:CreateGrant"]
+      resources = [var.ebs_kms_key_arn]
+      condition = [{
+        test     = "Bool"
+        variable = "kms:GrantIsForAWSResource"
+        values   = ["true"]
+      }]
+    },
+  ]
+
   enable_spot_termination   = var.enable_spot_interruption
   queue_name                = local.name
   queue_managed_sse_enabled = true

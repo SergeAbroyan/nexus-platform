@@ -15,6 +15,10 @@ dependency "karpenter" {
   config_path = "../karpenter"
 }
 
+dependency "kms" {
+  config_path = "../kms"
+}
+
 dependencies {
   paths = ["../platform-identity"]
 }
@@ -61,6 +65,7 @@ inputs = {
   vpc_id                             = dependency.vpc.outputs.vpc_id
   karpenter_interruption_queue_name = dependency.karpenter.outputs.interruption_queue_name
   karpenter_node_iam_role_name       = dependency.karpenter.outputs.node_iam_role_name
+  ebs_kms_key_arn                    = dependency.kms.outputs.key_arns["ebs"]
 
   controller_resources        = local.environment_config.locals.argocd_controller_resources
   server_resources            = local.environment_config.locals.argocd_server_resources
