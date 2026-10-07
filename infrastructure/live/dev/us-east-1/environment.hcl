@@ -62,4 +62,8 @@ locals {
     desired_size   = 1
     disk_size      = 30
   }
+
+  karpenter_namespace                = "kube-system"
+  karpenter_service_account          = "karpenter"
+  karpenter_enable_spot_interruption = true
 }
