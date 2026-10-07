@@ -32,3 +32,8 @@ output "node_security_group_id" {
   description = "ID of the shared EKS node security group."
   value       = module.eks.node_security_group_id
 }
+
+output "ebs_csi_iam_role_arn" {
+  description = "IAM role ARN assumed by the EBS CSI controller through EKS Pod Identity."
+  value       = module.ebs_csi_pod_identity.iam_role_arn
+}

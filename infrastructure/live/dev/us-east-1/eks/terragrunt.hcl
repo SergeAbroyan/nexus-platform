@@ -28,6 +28,7 @@ inputs = {
   private_subnet_ids = dependency.vpc.outputs.private_subnet_ids
 
   cluster_encryption_key_arn = dependency.kms.outputs.key_arns["eks"]
+  ebs_encryption_key_arn     = dependency.kms.outputs.key_arns["ebs"]
 
   cluster_admin_principal_arns = [get_aws_caller_identity_arn()]
 

@@ -34,6 +34,7 @@ locals {
   flow_log_max_aggregation_interval = 60
 
   kms_key_names = [
+    "ebs",
     "eks",
     "rds",
     "redis",

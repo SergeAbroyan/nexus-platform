@@ -59,6 +59,17 @@ variable "cluster_encryption_key_arn" {
   }
 }
 
+variable "ebs_encryption_key_arn" {
+  description = "KMS key ARN that EBS CSI may use to encrypt Kubernetes persistent volumes."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.ebs_encryption_key_arn))
+    error_message = "The EBS encryption key must be a valid KMS key ARN."
+  }
+}
+
 variable "cluster_admin_principal_arns" {
   description = "IAM principal ARNs granted cluster-wide administrator access."
   type        = set(string)

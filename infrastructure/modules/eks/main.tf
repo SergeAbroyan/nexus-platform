@@ -2,6 +2,26 @@ data "aws_partition" "current" {}
 
 locals {
   cluster_name = "${var.project_name}-${var.environment}"
+
+  standard_tags = merge(var.tags, {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  })
+}
+
+module "ebs_csi_pod_identity" {
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
+  version = "2.8.2"
+
+  name = "${local.cluster_name}-ebs-csi"
+
+  attach_aws_ebs_csi_policy = true
+  aws_ebs_csi_kms_arns      = [var.ebs_encryption_key_arn]
+
+  associations = {}
+
+  tags = local.standard_tags
 }
 
 module "eks" {
@@ -61,6 +81,12 @@ module "eks" {
   enable_irsa = false
 
   addons = {
+    "aws-ebs-csi-driver" = {
+      pod_identity_association = [{
+        role_arn        = module.ebs_csi_pod_identity.iam_role_arn
+        service_account = "ebs-csi-controller-sa"
+      }]
+    }
     coredns = {}
     "eks-pod-identity-agent" = {
       before_compute = true
@@ -121,9 +147,5 @@ module "eks" {
     "karpenter.sh/discovery" = local.cluster_name
   }
 
-  tags = merge(var.tags, {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = var.project_name
-  })
+  tags = local.standard_tags
 }
