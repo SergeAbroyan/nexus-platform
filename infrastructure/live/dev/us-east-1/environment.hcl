@@ -90,4 +90,11 @@ locals {
   valkey_snapshot_retention_days = 1
   valkey_log_retention_days      = 7
   valkey_apply_immediately       = true
+
+  sqs_visibility_timeout_seconds        = 60
+  sqs_message_retention_seconds         = 345600
+  sqs_dlq_message_retention_seconds     = 1209600
+  sqs_receive_wait_time_seconds         = 20
+  sqs_max_receive_count                 = 5
+  sqs_kms_data_key_reuse_period_seconds = 300
 }
