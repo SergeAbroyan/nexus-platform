@@ -28,7 +28,7 @@ variable "namespace" {
 }
 
 variable "gitops_repository" {
-  description = "Git repository containing the Nexus root application chart."
+  description = "Git repository containing the Nexus Helm charts and environment values."
   type        = string
   nullable    = false
 
@@ -39,7 +39,7 @@ variable "gitops_repository" {
 }
 
 variable "gitops_revision" {
-  description = "Git revision reconciled by the root Argo CD application."
+  description = "Git revision reconciled by the Argo CD ApplicationSets."
   type        = string
   default     = "main"
   nullable    = false
@@ -47,18 +47,6 @@ variable "gitops_revision" {
   validation {
     condition     = length(trimspace(var.gitops_revision)) > 0
     error_message = "The GitOps revision cannot be empty."
-  }
-}
-
-variable "gitops_chart_path" {
-  description = "Path to the root application Helm chart inside the GitOps repository."
-  type        = string
-  default     = "bootstrap/root"
-  nullable    = false
-
-  validation {
-    condition     = length(trimspace(var.gitops_chart_path)) > 0 && !startswith(var.gitops_chart_path, "/")
-    error_message = "The GitOps chart path must be a non-empty relative path."
   }
 }
 

@@ -114,7 +114,6 @@ locals {
 
   gitops_repository = "https://github.com/SergeAbroyan/nexus-gitops.git"
   gitops_revision   = "main"
-  gitops_chart_path = "bootstrap/root"
 
   argocd_controller_resources = {
     requests = {

@@ -77,7 +77,6 @@ inputs = {
 
   gitops_repository = local.environment_config.locals.gitops_repository
   gitops_revision   = local.environment_config.locals.gitops_revision
-  gitops_chart_path = local.environment_config.locals.gitops_chart_path
 
   cluster_name                       = dependency.eks.outputs.cluster_name
   aws_region                         = include.root.locals.aws_region
