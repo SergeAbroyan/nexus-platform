@@ -10,7 +10,7 @@ locals {
 
 module "api" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.8.2"
+  version = "2.9.0"
 
   name            = "${local.name}-api"
   use_name_prefix = false
@@ -52,7 +52,7 @@ module "api" {
 
 module "worker" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.8.2"
+  version = "2.9.0"
 
   name            = "${local.name}-worker"
   use_name_prefix = false

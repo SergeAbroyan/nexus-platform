@@ -101,4 +101,7 @@ locals {
   application_namespace  = "nexus"
   api_service_account    = "api"
   worker_service_account = "worker"
+
+  load_balancer_controller_namespace       = "kube-system"
+  load_balancer_controller_service_account = "aws-load-balancer-controller"
 }

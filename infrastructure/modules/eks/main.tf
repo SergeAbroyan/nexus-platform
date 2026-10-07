@@ -12,7 +12,7 @@ locals {
 
 module "ebs_csi_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.8.2"
+  version = "2.9.0"
 
   name = "${local.cluster_name}-ebs-csi"
 
