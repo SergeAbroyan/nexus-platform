@@ -1,0 +1,33 @@
+# Terraform working directories
+**/.terraform/*
+
+# Terraform state contains infrastructure details and may contain secrets
+*.tfstate
+*.tfstate.*
+
+# Local Terraform and Terragrunt variable files may contain secrets
+*.tfvars
+*.tfvars.json
+*.hcl.local
+
+# Local plan files
+*.tfplan
+
+# Terraform crash and diagnostic output
+crash.log
+crash.*.log
+
+# Local override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terragrunt download cache
+**/.terragrunt-cache/*
+
+# Operating-system and editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
