@@ -23,6 +23,14 @@ module "vpc" {
   create_database_subnet_route_table = true
   create_database_nat_gateway_route  = false
 
+  enable_flow_log                                 = var.enable_flow_logs
+  create_flow_log_cloudwatch_log_group            = var.enable_flow_logs
+  create_flow_log_cloudwatch_iam_role             = var.enable_flow_logs
+  flow_log_destination_type                       = "cloud-watch-logs"
+  flow_log_traffic_type                           = "ALL"
+  flow_log_max_aggregation_interval               = var.flow_log_max_aggregation_interval
+  flow_log_cloudwatch_log_group_retention_in_days = var.flow_log_retention_days
+
   public_subnet_tags = {
     "kubernetes.io/role/elb" = "1"
   }

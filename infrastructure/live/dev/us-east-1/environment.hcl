@@ -28,7 +28,10 @@ locals {
     "10.10.66.0/24",
   ]
 
-  nat_gateway_mode = "single"
+  nat_gateway_mode                  = "single"
+  enable_flow_logs                  = true
+  flow_log_retention_days           = 7
+  flow_log_max_aggregation_interval = 60
 
   kms_key_names = [
     "eks",

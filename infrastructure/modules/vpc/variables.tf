@@ -95,6 +95,37 @@ variable "nat_gateway_mode" {
   }
 }
 
+variable "enable_flow_logs" {
+  description = "Whether to record VPC network traffic in CloudWatch Logs."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
+variable "flow_log_retention_days" {
+  description = "Number of days CloudWatch retains VPC Flow Log records."
+  type        = number
+  default     = 30
+  nullable    = false
+
+  validation {
+    condition     = var.flow_log_retention_days >= 1
+    error_message = "VPC Flow Logs must be retained for at least one day."
+  }
+}
+
+variable "flow_log_max_aggregation_interval" {
+  description = "Maximum number of seconds aggregated into each VPC Flow Log record."
+  type        = number
+  default     = 600
+  nullable    = false
+
+  validation {
+    condition     = contains([60, 600], var.flow_log_max_aggregation_interval)
+    error_message = "The Flow Log aggregation interval must be 60 or 600 seconds."
+  }
+}
+
 variable "tags" {
   description = "Additional tags merged with the module's standard tags."
   type        = map(string)
