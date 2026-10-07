@@ -12,3 +12,8 @@ output "repository_urls" {
   description = "Map of service names to ECR repository URLs."
   value       = { for name, repository in module.repository : name => repository.repository_url }
 }
+
+output "registry_url" {
+  description = "ECR registry hostname shared by all Nexus repositories."
+  value       = split("/", values(module.repository)[0].repository_url)[0]
+}

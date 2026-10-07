@@ -18,6 +18,11 @@ output "database_name" {
   value       = module.database.db_instance_name
 }
 
+output "username" {
+  description = "Database username stored with the RDS-managed password."
+  value       = module.database.db_instance_username
+}
+
 output "master_user_secret_arn" {
   description = "Secrets Manager ARN containing the RDS-managed administrator credentials."
   value       = module.database.db_instance_master_user_secret_arn

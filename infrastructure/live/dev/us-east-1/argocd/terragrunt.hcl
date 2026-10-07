@@ -19,8 +19,27 @@ dependency "kms" {
   config_path = "../kms"
 }
 
+dependency "ecr" {
+  config_path = "../ecr"
+}
+
+dependency "rds" {
+  config_path = "../rds"
+}
+
+dependency "valkey" {
+  config_path = "../valkey"
+}
+
+dependency "sqs" {
+  config_path = "../sqs"
+}
+
 dependencies {
-  paths = ["../platform-identity"]
+  paths = [
+    "../platform-identity",
+    "../workload-identity",
+  ]
 }
 
 locals {
@@ -66,6 +85,19 @@ inputs = {
   karpenter_interruption_queue_name = dependency.karpenter.outputs.interruption_queue_name
   karpenter_node_iam_role_name       = dependency.karpenter.outputs.node_iam_role_name
   ebs_kms_key_arn                    = dependency.kms.outputs.key_arns["ebs"]
+
+  environment         = local.environment_config.locals.environment
+  ecr_registry_url    = dependency.ecr.outputs.registry_url
+  database_host       = dependency.rds.outputs.address
+  database_port       = dependency.rds.outputs.port
+  database_name       = dependency.rds.outputs.database_name
+  database_username   = dependency.rds.outputs.username
+  database_secret_arn = dependency.rds.outputs.master_user_secret_arn
+  valkey_host          = dependency.valkey.outputs.primary_endpoint
+  valkey_port          = dependency.valkey.outputs.port
+  valkey_username      = dependency.valkey.outputs.application_user_name
+  valkey_cache_name    = dependency.valkey.outputs.replication_group_id
+  sqs_queue_url        = dependency.sqs.outputs.queue_url
 
   controller_resources        = local.environment_config.locals.argocd_controller_resources
   server_resources            = local.environment_config.locals.argocd_server_resources

@@ -3,6 +3,11 @@ output "replication_group_arn" {
   value       = module.cache.replication_group_arn
 }
 
+output "replication_group_id" {
+  description = "Replication group identifier used when generating IAM authentication tokens."
+  value       = module.cache.replication_group_id
+}
+
 output "primary_endpoint" {
   description = "Primary Valkey endpoint used for reads and writes."
   value       = module.cache.replication_group_primary_endpoint_address

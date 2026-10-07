@@ -22,6 +22,24 @@ locals {
               karpenterNodeIamRoleName       = var.karpenter_node_iam_role_name
               ebsKmsKeyArn                   = var.ebs_kms_key_arn
             }
+            application = {
+              environment   = var.environment
+              imageRegistry = var.ecr_registry_url
+              database = {
+                host      = var.database_host
+                port      = tostring(var.database_port)
+                name      = var.database_name
+                username  = var.database_username
+                secretArn = var.database_secret_arn
+              }
+              valkey = {
+                host      = var.valkey_host
+                port      = tostring(var.valkey_port)
+                username  = var.valkey_username
+                cacheName = var.valkey_cache_name
+              }
+              sqsQueueUrl = var.sqs_queue_url
+            }
           }
         }
       }

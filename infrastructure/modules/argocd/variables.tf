@@ -98,6 +98,78 @@ variable "ebs_kms_key_arn" {
   nullable    = false
 }
 
+variable "environment" {
+  description = "Deployment environment whose Helm values Argo CD loads."
+  type        = string
+  nullable    = false
+}
+
+variable "ecr_registry_url" {
+  description = "ECR registry hosting the Nexus application images."
+  type        = string
+  nullable    = false
+}
+
+variable "database_host" {
+  description = "Private RDS hostname used by the Nexus API."
+  type        = string
+  nullable    = false
+}
+
+variable "database_port" {
+  description = "RDS listener port."
+  type        = number
+  nullable    = false
+}
+
+variable "database_name" {
+  description = "PostgreSQL database used by Nexus."
+  type        = string
+  nullable    = false
+}
+
+variable "database_username" {
+  description = "PostgreSQL username paired with the RDS-managed password."
+  type        = string
+  nullable    = false
+}
+
+variable "database_secret_arn" {
+  description = "Secrets Manager ARN containing the RDS-managed password."
+  type        = string
+  nullable    = false
+}
+
+variable "valkey_host" {
+  description = "Private Valkey primary endpoint used by the Nexus API."
+  type        = string
+  nullable    = false
+}
+
+variable "valkey_port" {
+  description = "Valkey TLS listener port."
+  type        = number
+  nullable    = false
+}
+
+variable "valkey_username" {
+  description = "IAM-enabled Valkey username used by the Nexus API."
+  type        = string
+  nullable    = false
+}
+
+variable "valkey_cache_name" {
+  description = "Valkey replication group identifier used in IAM tokens."
+  type        = string
+  nullable    = false
+}
+
+variable "sqs_queue_url" {
+  description = "SQS queue URL used by the Nexus API and worker."
+  type        = string
+  nullable    = false
+}
+
 variable "controller_resources" {
   description = "CPU and memory requests and limits for the Argo CD application controller."
   type = object({
