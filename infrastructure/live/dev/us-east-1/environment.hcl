@@ -107,4 +107,9 @@ locals {
 
   external_secrets_namespace       = "external-secrets"
   external_secrets_service_account = "external-secrets"
+
+  github_owner                     = "SergeAbroyan"
+  github_infrastructure_repository = "nexus-platform"
+  github_applications_repository   = "nexus-applications"
+  github_deployment_branch         = "main"
 }
