@@ -70,4 +70,16 @@ locals {
   karpenter_namespace                = "kube-system"
   karpenter_service_account          = "karpenter"
   karpenter_enable_spot_interruption = true
+
+  rds_database_name         = "nexus"
+  rds_master_username       = "nexus_admin"
+  rds_engine_version        = "17"
+  rds_instance_class        = "db.t4g.micro"
+  rds_allocated_storage     = 20
+  rds_max_allocated_storage = 100
+  rds_multi_az              = false
+  rds_backup_retention_days = 7
+  rds_deletion_protection   = false
+  rds_skip_final_snapshot   = true
+  rds_apply_immediately     = true
 }
