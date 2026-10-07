@@ -97,4 +97,8 @@ locals {
   sqs_receive_wait_time_seconds         = 20
   sqs_max_receive_count                 = 5
   sqs_kms_data_key_reuse_period_seconds = 300
+
+  application_namespace  = "nexus"
+  api_service_account    = "api"
+  worker_service_account = "worker"
 }
