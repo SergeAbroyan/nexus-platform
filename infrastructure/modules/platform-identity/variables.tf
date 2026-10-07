@@ -53,6 +53,50 @@ variable "load_balancer_controller_service_account" {
   }
 }
 
+variable "external_secrets_namespace" {
+  description = "Kubernetes namespace containing the External Secrets controller."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.external_secrets_namespace)) && length(var.external_secrets_namespace) <= 63
+    error_message = "The External Secrets namespace must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
+variable "external_secrets_service_account" {
+  description = "Kubernetes service account used by the External Secrets controller."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.external_secrets_service_account)) && length(var.external_secrets_service_account) <= 63
+    error_message = "The External Secrets service account must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
+variable "rds_master_user_secret_arn" {
+  description = "ARN of the RDS-managed database credential secret."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$", var.rds_master_user_secret_arn))
+    error_message = "The database credential secret must be a valid Secrets Manager ARN."
+  }
+}
+
+variable "rds_kms_key_arn" {
+  description = "ARN of the KMS key encrypting the RDS-managed database credential secret."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.rds_kms_key_arn))
+    error_message = "The database encryption key must be a valid KMS key ARN."
+  }
+}
+
 variable "tags" {
   description = "Additional tags merged with the module's standard tags."
   type        = map(string)

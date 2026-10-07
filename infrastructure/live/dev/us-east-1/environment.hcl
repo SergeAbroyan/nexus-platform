@@ -104,4 +104,7 @@ locals {
 
   load_balancer_controller_namespace       = "kube-system"
   load_balancer_controller_service_account = "aws-load-balancer-controller"
+
+  external_secrets_namespace       = "external-secrets"
+  external_secrets_service_account = "external-secrets"
 }

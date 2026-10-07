@@ -22,3 +22,28 @@ output "load_balancer_controller_service_account" {
   description = "Kubernetes service account associated with the controller IAM role."
   value       = var.load_balancer_controller_service_account
 }
+
+output "external_secrets_iam_role_arn" {
+  description = "IAM role ARN assumed by the External Secrets controller."
+  value       = module.external_secrets.iam_role_arn
+}
+
+output "external_secrets_iam_role_name" {
+  description = "IAM role name associated with the External Secrets controller."
+  value       = module.external_secrets.iam_role_name
+}
+
+output "external_secrets_iam_policy_arn" {
+  description = "IAM policy ARN granting read-only access to the database secret."
+  value       = module.external_secrets.iam_policy_arn
+}
+
+output "external_secrets_namespace" {
+  description = "Kubernetes namespace associated with the External Secrets IAM role."
+  value       = var.external_secrets_namespace
+}
+
+output "external_secrets_service_account" {
+  description = "Kubernetes service account associated with the External Secrets IAM role."
+  value       = var.external_secrets_service_account
+}
