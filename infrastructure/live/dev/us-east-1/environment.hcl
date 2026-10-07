@@ -82,4 +82,12 @@ locals {
   rds_deletion_protection   = false
   rds_skip_final_snapshot   = true
   rds_apply_immediately     = true
+
+  valkey_engine_version          = "8.1"
+  valkey_node_type               = "cache.t4g.micro"
+  valkey_num_cache_clusters      = 1
+  valkey_multi_az                = false
+  valkey_snapshot_retention_days = 1
+  valkey_log_retention_days      = 7
+  valkey_apply_immediately       = true
 }
