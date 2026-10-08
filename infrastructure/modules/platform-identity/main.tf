@@ -41,7 +41,7 @@ module "external_secrets" {
   description     = "Pod Identity role for the Nexus External Secrets controller"
 
   attach_custom_policy      = true
-  custom_policy_description = "Read-only access to the Nexus RDS credential secret"
+  custom_policy_description = "Read-only access to Nexus application and platform secrets"
   policy_statements = [
     {
       sid = "ReadDatabaseSecret"
@@ -51,12 +51,12 @@ module "external_secrets" {
         "secretsmanager:GetSecretValue",
         "secretsmanager:ListSecretVersionIds",
       ]
-      resources = [var.rds_master_user_secret_arn]
+      resources = concat([var.rds_master_user_secret_arn], var.additional_secret_arns)
     },
     {
       sid       = "DecryptDatabaseSecret"
       actions   = ["kms:Decrypt"]
-      resources = [var.rds_kms_key_arn]
+      resources = concat([var.rds_kms_key_arn], var.additional_secret_kms_key_arns)
     },
   ]
 

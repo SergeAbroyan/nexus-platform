@@ -128,6 +128,17 @@ variable "database_secret_arn" {
   nullable    = false
 }
 
+variable "grafana_admin_secret_arn" {
+  description = "Secrets Manager ARN containing the generated Grafana administrator password."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$", var.grafana_admin_secret_arn))
+    error_message = "The Grafana administrator secret must be a valid Secrets Manager ARN."
+  }
+}
+
 variable "valkey_host" {
   description = "Private Valkey primary endpoint used by the Nexus API."
   type        = string

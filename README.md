@@ -5,9 +5,9 @@ describe reusable infrastructure components, while Terragrunt connects those
 components for each environment and stores a separate state file for every
 component.
 
-Application source code belongs in `nexus-applications`. Helm charts, Argo CD,
-Istio, External Secrets, Prometheus, and Grafana configuration belong in
-`nexus-gitops`.
+Application source code belongs in `nexus-applications`. Project-owned Helm
+charts and environment values belong in `nexus-gitops`. Terraform owns Argo CD,
+its ApplicationSets, and infrastructure-derived platform configuration.
 
 ## Repository structure
 
@@ -33,13 +33,13 @@ a manually maintained script.
 
 ```text
 VPC ───────────────┐
-                   ├── EKS ──┬── Argo CD ── GitOps root
-                             ├── Karpenter
-KMS ───────────────┘         ├── RDS ──────┐
-  ├── SQS ───────────────────┤             ├── Platform identities
-  └──────────────────────────┼── Valkey ───┤
-                             │             └── Workload identities
-ECR ── CI identities         └─────────────────────────────────────
+                   ├── EKS ───────────────┐
+KMS ───────────────┤                      ├── Argo CD + ApplicationSets
+  ├── Platform secrets ───────────────────┤
+  ├── RDS ────────────────────────────────┤
+  ├── SQS                                 ├── Platform identities
+  └── Valkey                              └── Workload identities
+ECR ── CI identities
 ```
 
 Independent components may run in parallel. `destroy` automatically uses the
@@ -105,7 +105,12 @@ outputs for deployment plans because they can hide wiring errors.
 
 ## Deployment boundary
 
-Terraform installs only the Argo CD GitOps controller after EKS is ready and
-seeds its root application. Argo CD then installs Kubernetes platform add-ons
-and applications from `nexus-gitops`. This keeps the controller in the
-infrastructure lifecycle without moving normal Helm deployments into Terraform.
+Terraform installs the Argo CD controller after EKS is ready and seeds one
+AppProject plus categorized ApplicationSets. Argo CD then installs external
+platform charts and project-owned charts from `nexus-gitops`.
+
+Terraform also creates platform credentials that must exist before Kubernetes
+workloads start. For example, the Grafana administrator password is generated
+ephemerally and written directly to AWS Secrets Manager, so its value is not
+stored in Git or Terraform state. External Secrets materializes it only in the
+`monitoring` namespace.

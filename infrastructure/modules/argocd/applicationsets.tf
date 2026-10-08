@@ -145,6 +145,131 @@ locals {
         }
       })
     },
+    {
+      name       = "monitoring"
+      namespace  = "monitoring"
+      repository = "https://prometheus-community.github.io/helm-charts"
+      chart      = "kube-prometheus-stack"
+      revision   = "92.1.0"
+      values = yamlencode({
+        fullnameOverride      = "monitoring"
+        kubeEtcd              = { enabled = false }
+        kubeControllerManager = { enabled = false }
+        kubeScheduler         = { enabled = false }
+
+        prometheusOperator = {
+          nodeSelector = { role = "system" }
+          resources = {
+            requests = { cpu = "100m", memory = "256Mi" }
+            limits   = { cpu = "500m", memory = "512Mi" }
+          }
+        }
+
+        prometheus = {
+          prometheusSpec = {
+            retention     = "7d"
+            retentionSize = "16GB"
+            nodeSelector  = { role = "general" }
+            resources = {
+              requests = { cpu = "500m", memory = "1Gi" }
+              limits   = { cpu = "2", memory = "3Gi" }
+            }
+            storageSpec = {
+              volumeClaimTemplate = {
+                spec = {
+                  storageClassName = "nexus-gp3"
+                  accessModes      = ["ReadWriteOnce"]
+                  resources        = { requests = { storage = "20Gi" } }
+                }
+              }
+            }
+          }
+        }
+
+        alertmanager = {
+          alertmanagerSpec = {
+            nodeSelector = { role = "general" }
+            resources = {
+              requests = { cpu = "100m", memory = "128Mi" }
+              limits   = { cpu = "500m", memory = "512Mi" }
+            }
+            storage = {
+              volumeClaimTemplate = {
+                spec = {
+                  storageClassName = "nexus-gp3"
+                  accessModes      = ["ReadWriteOnce"]
+                  resources        = { requests = { storage = "5Gi" } }
+                }
+              }
+            }
+          }
+        }
+
+        grafana = {
+          admin = {
+            existingSecret = "grafana-admin"
+            userKey        = "admin-user"
+            passwordKey    = "admin-password"
+          }
+          ingress      = { enabled = false }
+          nodeSelector = { role = "general" }
+          persistence = {
+            enabled          = true
+            type             = "sts"
+            storageClassName = "nexus-gp3"
+            accessModes      = ["ReadWriteOnce"]
+            size             = "5Gi"
+          }
+          resources = {
+            requests = { cpu = "100m", memory = "256Mi" }
+            limits   = { cpu = "500m", memory = "1Gi" }
+          }
+        }
+
+        extraManifests = [
+          {
+            apiVersion = "external-secrets.io/v1"
+            kind       = "SecretStore"
+            metadata   = { name = "aws-secrets-manager" }
+            spec = {
+              provider = {
+                aws = {
+                  service = "SecretsManager"
+                  region  = var.aws_region
+                }
+              }
+            }
+          },
+          {
+            apiVersion = "external-secrets.io/v1"
+            kind       = "ExternalSecret"
+            metadata   = { name = "grafana-admin" }
+            spec = {
+              refreshInterval = "1h"
+              secretStoreRef = {
+                name = "aws-secrets-manager"
+                kind = "SecretStore"
+              }
+              target = {
+                name           = "grafana-admin"
+                creationPolicy = "Owner"
+                template = {
+                  type = "Opaque"
+                  data = {
+                    admin-user     = "admin"
+                    admin-password = "{{ printf \"{{ `%s` }}\" \"{{ .adminPassword }}\" }}"
+                  }
+                }
+              }
+              data = [{
+                secretKey = "adminPassword"
+                remoteRef = { key = var.grafana_admin_secret_arn }
+              }]
+            }
+          },
+        ]
+      })
+    },
   ]
 
   local_applications = [
@@ -187,6 +312,7 @@ locals {
         "https://charts.external-secrets.io",
         "https://kubernetes-sigs.github.io/metrics-server",
         "https://aws.github.io/eks-charts",
+        "https://prometheus-community.github.io/helm-charts",
       ]
       destinations = [
         { server = "https://kubernetes.default.svc", namespace = "kube-system" },
@@ -194,6 +320,7 @@ locals {
         { server = "https://kubernetes.default.svc", namespace = "istio-system" },
         { server = "https://kubernetes.default.svc", namespace = "cloudbeaver" },
         { server = "https://kubernetes.default.svc", namespace = "nexus" },
+        { server = "https://kubernetes.default.svc", namespace = "monitoring" },
       ]
       clusterResourceWhitelist   = [{ group = "*", kind = "*" }]
       namespaceResourceWhitelist = [{ group = "*", kind = "*" }]

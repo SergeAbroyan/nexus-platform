@@ -35,6 +35,10 @@ dependency "sqs" {
   config_path = "../sqs"
 }
 
+dependency "platform_secrets" {
+  config_path = "../platform-secrets"
+}
+
 dependencies {
   paths = [
     "../platform-identity",
@@ -92,6 +96,7 @@ inputs = {
   database_name       = dependency.rds.outputs.database_name
   database_username   = dependency.rds.outputs.username
   database_secret_arn = dependency.rds.outputs.master_user_secret_arn
+  grafana_admin_secret_arn = dependency.platform_secrets.outputs.grafana_admin_secret_arn
   valkey_host          = dependency.valkey.outputs.primary_endpoint
   valkey_port          = dependency.valkey.outputs.port
   valkey_username      = dependency.valkey.outputs.application_user_name

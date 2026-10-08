@@ -97,6 +97,36 @@ variable "rds_kms_key_arn" {
   }
 }
 
+variable "additional_secret_arns" {
+  description = "Additional Secrets Manager ARNs readable by External Secrets."
+  type        = list(string)
+  default     = []
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for arn in var.additional_secret_arns :
+      can(regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$", arn))
+    ])
+    error_message = "Every additional secret must be a valid Secrets Manager ARN."
+  }
+}
+
+variable "additional_secret_kms_key_arns" {
+  description = "KMS key ARNs required to decrypt additional platform secrets."
+  type        = list(string)
+  default     = []
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for arn in var.additional_secret_kms_key_arns :
+      can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", arn))
+    ])
+    error_message = "Every additional secret KMS key must be a valid KMS key ARN."
+  }
+}
+
 variable "tags" {
   description = "Additional tags merged with the module's standard tags."
   type        = map(string)

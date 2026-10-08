@@ -38,10 +38,13 @@ locals {
     "eks",
     "rds",
     "redis",
+    "secrets",
     "sqs",
   ]
 
   kms_deletion_window_in_days = 7
+
+  platform_secret_recovery_window_days = 7
 
   ecr_repository_names = [
     "api",
