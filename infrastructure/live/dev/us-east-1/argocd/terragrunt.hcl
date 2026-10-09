@@ -39,6 +39,10 @@ dependency "platform_secrets" {
   config_path = "../platform-secrets"
 }
 
+dependency "dns" {
+  config_path = "../dns"
+}
+
 dependencies {
   paths = [
     "../platform-identity",
@@ -89,8 +93,10 @@ inputs = {
   karpenter_node_iam_role_name       = dependency.karpenter.outputs.node_iam_role_name
   ebs_kms_key_arn                    = dependency.kms.outputs.key_arns["ebs"]
 
-  environment         = local.environment_config.locals.environment
-  nexus_ingress_host  = local.environment_config.locals.nexus_ingress_host
+  environment          = local.environment_config.locals.environment
+  dns_zone_name        = local.environment_config.locals.dns_zone_name
+  nexus_ingress_host   = local.environment_config.locals.nexus_ingress_host
+  nexus_certificate_arn = dependency.dns.outputs.certificate_arn
   ecr_registry_url    = dependency.ecr.outputs.registry_url
   database_host       = dependency.rds.outputs.address
   database_port       = dependency.rds.outputs.port

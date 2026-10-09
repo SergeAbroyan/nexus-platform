@@ -104,6 +104,28 @@ variable "nexus_ingress_host" {
   }
 }
 
+variable "dns_zone_name" {
+  description = "Route 53 zone in which ExternalDNS may manage records."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$", var.dns_zone_name))
+    error_message = "The DNS zone name must be a valid lowercase DNS name."
+  }
+}
+
+variable "nexus_certificate_arn" {
+  description = "ACM certificate used by the Nexus Network Load Balancer HTTPS listener."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:acm:[^:]+:[0-9]{12}:certificate/.+$", var.nexus_certificate_arn))
+    error_message = "The Nexus certificate must be a valid ACM certificate ARN."
+  }
+}
+
 variable "ecr_registry_url" {
   description = "ECR registry hosting the Nexus application images."
   type        = string

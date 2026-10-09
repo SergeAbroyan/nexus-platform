@@ -102,7 +102,9 @@ locals {
   sqs_kms_data_key_reuse_period_seconds = 300
 
   application_namespace  = "nexus"
-  nexus_ingress_host     = "*"
+  dns_zone_name          = "platform.com"
+  dns_force_destroy      = true
+  nexus_ingress_host     = "nexus.platform.com"
   api_service_account    = "api"
   worker_service_account = "worker"
 
@@ -111,6 +113,8 @@ locals {
 
   external_secrets_namespace       = "external-secrets"
   external_secrets_service_account = "external-secrets"
+  external_dns_namespace           = "external-dns"
+  external_dns_service_account     = "external-dns"
 
   argocd_namespace        = "argocd"
   argocd_chart_repository = "https://argoproj.github.io/argo-helm"

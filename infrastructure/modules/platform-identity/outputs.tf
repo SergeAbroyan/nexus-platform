@@ -47,3 +47,8 @@ output "external_secrets_service_account" {
   description = "Kubernetes service account associated with the External Secrets IAM role."
   value       = var.external_secrets_service_account
 }
+
+output "external_dns_iam_role_arn" {
+  description = "IAM role assumed by ExternalDNS through EKS Pod Identity."
+  value       = module.external_dns.iam_role_arn
+}

@@ -75,6 +75,39 @@ variable "external_secrets_service_account" {
   }
 }
 
+variable "external_dns_namespace" {
+  description = "Kubernetes namespace containing ExternalDNS."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.external_dns_namespace)) && length(var.external_dns_namespace) <= 63
+    error_message = "The ExternalDNS namespace must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
+variable "external_dns_service_account" {
+  description = "Kubernetes service account used by ExternalDNS."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.external_dns_service_account)) && length(var.external_dns_service_account) <= 63
+    error_message = "The ExternalDNS service account must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
+variable "external_dns_hosted_zone_arn" {
+  description = "Route 53 hosted-zone ARN ExternalDNS may modify."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:route53:::hostedzone/.+$", var.external_dns_hosted_zone_arn))
+    error_message = "The ExternalDNS hosted zone must be a valid Route 53 zone ARN."
+  }
+}
+
 variable "rds_master_user_secret_arn" {
   description = "ARN of the RDS-managed database credential secret."
   type        = string

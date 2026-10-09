@@ -40,6 +40,8 @@ KMS ───────────────┤                      ├─
   ├── SQS                                 ├── Platform identities
   └── Valkey                              └── Workload identities
 ECR ── CI identities
+DNS ── ACM certificate ───────────────────┤
+  └── ExternalDNS identity ───────────────┘
 ```
 
 Independent components may run in parallel. `destroy` automatically uses the
@@ -51,12 +53,20 @@ reverse dependency order.
 - Terragrunt
 - AWS credentials for account `123456789012`
 - Access to the existing state bucket `nexus-terraform-state-123456789012`
+- Ownership of `platform.com` before deployment
 
 Confirm the active AWS identity before any deployment:
 
 ```bash
 aws sts get-caller-identity
 ```
+
+The DEV configuration assumes `nexus.platform.com`. Terraform creates its
+Route 53 public hosted zone and ACM certificate, but it cannot purchase the
+domain. After buying `platform.com`, copy the `dns` unit's `name_servers`
+output into the registrar's nameserver settings before applying downstream
+units. ACM waits for DNS validation and cannot finish until that delegation is
+active.
 
 ## Commands
 
@@ -114,3 +124,10 @@ workloads start. For example, the Grafana administrator password is generated
 ephemerally and written directly to AWS Secrets Manager, so its value is not
 stored in Git or Terraform state. External Secrets materializes it only in the
 `monitoring` namespace.
+
+Argo CD installs ExternalDNS with a narrowly scoped Pod Identity role. It
+creates `nexus.platform.com` from the Istio gateway Service after AWS assigns
+the NLB hostname. The NLB terminates HTTPS with ACM and redirects HTTP to
+HTTPS. Its scheme remains `internal`, so the hostname is reachable only from
+networks that can reach the VPC; publishing it later requires a separate,
+explicit public-access decision.

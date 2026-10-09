@@ -2,6 +2,7 @@ locals {
   name                          = "${var.project_name}-${var.environment}"
   load_balancer_controller_name = "${local.name}-aws-load-balancer-controller"
   external_secrets_name         = "${local.name}-external-secrets"
+  external_dns_name             = "${local.name}-external-dns"
 
   standard_tags = merge(var.tags, {
     Environment = var.environment
@@ -65,6 +66,29 @@ module "external_secrets" {
       cluster_name    = var.cluster_name
       namespace       = var.external_secrets_namespace
       service_account = var.external_secrets_service_account
+    }
+  }
+
+  tags = local.standard_tags
+}
+
+module "external_dns" {
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
+  version = "2.9.0"
+
+  name            = local.external_dns_name
+  use_name_prefix = false
+  description     = "Pod Identity role for the Nexus ExternalDNS controller"
+
+  attach_external_dns_policy    = true
+  external_dns_policy_name      = local.external_dns_name
+  external_dns_hosted_zone_arns = [var.external_dns_hosted_zone_arn]
+
+  associations = {
+    controller = {
+      cluster_name    = var.cluster_name
+      namespace       = var.external_dns_namespace
+      service_account = var.external_dns_service_account
     }
   }
 

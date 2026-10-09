@@ -80,10 +80,14 @@ locals {
           annotations = {
             "service.beta.kubernetes.io/aws-load-balancer-scheme"          = "internal"
             "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" = "ip"
+            "service.beta.kubernetes.io/aws-load-balancer-ssl-cert"        = var.nexus_certificate_arn
+            "service.beta.kubernetes.io/aws-load-balancer-ssl-ports"       = "https"
+            "external-dns.kubernetes.io/hostname"                          = var.nexus_ingress_host
           }
-          ports = [{
-            name = "http2", port = 80, targetPort = 80, protocol = "TCP"
-          }]
+          ports = [
+            { name = "http", port = 80, targetPort = 80, protocol = "TCP" },
+            { name = "https", port = 443, targetPort = 8443, protocol = "TCP" },
+          ]
         }
         nodeSelector = { role = "system" }
         autoscaling = {
@@ -95,6 +99,27 @@ locals {
         resources = {
           requests = { cpu = "100m", memory = "128Mi" }
           limits   = { cpu = "500m", memory = "512Mi" }
+        }
+      })
+    },
+    {
+      name       = "external-dns"
+      namespace  = "external-dns"
+      repository = "https://kubernetes-sigs.github.io/external-dns"
+      chart      = "external-dns"
+      revision   = "1.23.0"
+      values = yamlencode({
+        provider       = { name = "aws" }
+        sources        = ["service"]
+        policy         = "sync"
+        registry       = "txt"
+        txtOwnerId     = var.cluster_name
+        domainFilters  = [var.dns_zone_name]
+        serviceAccount = { create = true, name = "external-dns" }
+        nodeSelector   = { role = "system" }
+        resources = {
+          requests = { cpu = "25m", memory = "64Mi" }
+          limits   = { cpu = "100m", memory = "128Mi" }
         }
       })
     },
@@ -353,6 +378,7 @@ locals {
         "https://kubernetes-sigs.github.io/metrics-server",
         "https://aws.github.io/eks-charts",
         "https://prometheus-community.github.io/helm-charts",
+        "https://kubernetes-sigs.github.io/external-dns",
       ]
       destinations = [
         { server = "https://kubernetes.default.svc", namespace = "kube-system" },
@@ -362,6 +388,7 @@ locals {
         { server = "https://kubernetes.default.svc", namespace = "cloudbeaver" },
         { server = "https://kubernetes.default.svc", namespace = "nexus" },
         { server = "https://kubernetes.default.svc", namespace = "monitoring" },
+        { server = "https://kubernetes.default.svc", namespace = "external-dns" },
       ]
       clusterResourceWhitelist   = [{ group = "*", kind = "*" }]
       namespaceResourceWhitelist = [{ group = "*", kind = "*" }]
