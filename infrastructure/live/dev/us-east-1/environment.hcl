@@ -102,6 +102,7 @@ locals {
   sqs_kms_data_key_reuse_period_seconds = 300
 
   application_namespace  = "nexus"
+  nexus_ingress_host     = "*"
   api_service_account    = "api"
   worker_service_account = "worker"
 

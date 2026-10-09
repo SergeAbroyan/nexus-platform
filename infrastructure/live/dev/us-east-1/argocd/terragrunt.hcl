@@ -90,6 +90,7 @@ inputs = {
   ebs_kms_key_arn                    = dependency.kms.outputs.key_arns["ebs"]
 
   environment         = local.environment_config.locals.environment
+  nexus_ingress_host  = local.environment_config.locals.nexus_ingress_host
   ecr_registry_url    = dependency.ecr.outputs.registry_url
   database_host       = dependency.rds.outputs.address
   database_port       = dependency.rds.outputs.port

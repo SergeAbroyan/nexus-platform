@@ -92,6 +92,18 @@ variable "environment" {
   nullable    = false
 }
 
+variable "nexus_ingress_host" {
+  description = "Host accepted by the internal Nexus Istio gateway; use an internal DNS name when available."
+  type        = string
+  default     = "*"
+  nullable    = false
+
+  validation {
+    condition     = var.nexus_ingress_host == "*" || can(regex("^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$", var.nexus_ingress_host))
+    error_message = "The Nexus ingress host must be '*' or a valid lowercase DNS hostname."
+  }
+}
+
 variable "ecr_registry_url" {
   description = "ECR registry hosting the Nexus application images."
   type        = string

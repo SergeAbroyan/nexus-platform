@@ -67,6 +67,38 @@ locals {
       })
     },
     {
+      name       = "istio-ingress"
+      namespace  = "istio-ingress"
+      repository = "https://blob.istio.io/istio-release/charts"
+      chart      = "gateway"
+      revision   = "1.30.5"
+      values = yamlencode({
+        name = "istio-ingress"
+        service = {
+          type              = "LoadBalancer"
+          loadBalancerClass = "service.k8s.aws/nlb"
+          annotations = {
+            "service.beta.kubernetes.io/aws-load-balancer-scheme"          = "internal"
+            "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" = "ip"
+          }
+          ports = [{
+            name = "http2", port = 80, targetPort = 80, protocol = "TCP"
+          }]
+        }
+        nodeSelector = { role = "system" }
+        autoscaling = {
+          enabled     = true
+          minReplicas = 2
+          maxReplicas = 5
+        }
+        podDisruptionBudget = { minAvailable = 1 }
+        resources = {
+          requests = { cpu = "100m", memory = "128Mi" }
+          limits   = { cpu = "500m", memory = "512Mi" }
+        }
+      })
+    },
+    {
       name       = "karpenter-crd"
       namespace  = "kube-system"
       repository = "public.ecr.aws/karpenter"
@@ -295,6 +327,14 @@ locals {
       path      = "charts/tools/cloudbeaver"
       values    = "{}"
     },
+    {
+      name      = "ingress-config"
+      namespace = "istio-ingress"
+      path      = "charts/platform/ingress"
+      values = yamlencode({
+        host = var.nexus_ingress_host
+      })
+    },
   ]
 
   project = {
@@ -318,6 +358,7 @@ locals {
         { server = "https://kubernetes.default.svc", namespace = "kube-system" },
         { server = "https://kubernetes.default.svc", namespace = "external-secrets" },
         { server = "https://kubernetes.default.svc", namespace = "istio-system" },
+        { server = "https://kubernetes.default.svc", namespace = "istio-ingress" },
         { server = "https://kubernetes.default.svc", namespace = "cloudbeaver" },
         { server = "https://kubernetes.default.svc", namespace = "nexus" },
         { server = "https://kubernetes.default.svc", namespace = "monitoring" },
