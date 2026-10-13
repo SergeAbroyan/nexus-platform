@@ -132,6 +132,12 @@ ephemerally and written directly to AWS Secrets Manager, so its value is not
 stored in Git or Terraform state. External Secrets materializes it only in the
 `monitoring` namespace.
 
+Argo CD also installs Loki in monolithic mode for the DEV logging backend. Loki
+keeps seven days of logs on a retained `20Gi` encrypted `nexus-gp3` volume and
+exposes only an internal gateway Service. Grafana receives the Loki data source
+through Helm provisioning. This single-replica filesystem design keeps DEV
+costs low; a production environment should use S3-backed replicated Loki.
+
 Argo CD installs ExternalDNS with a narrowly scoped Pod Identity role. It
 creates `nexus.platform.com` from the Istio gateway Service after AWS assigns
 the NLB hostname. The NLB terminates HTTPS with ACM and redirects HTTP to

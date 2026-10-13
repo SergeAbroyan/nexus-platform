@@ -296,6 +296,15 @@ locals {
             requests = { cpu = "100m", memory = "256Mi" }
             limits   = { cpu = "500m", memory = "1Gi" }
           }
+          additionalDataSources = [{
+            name      = "Loki"
+            type      = "loki"
+            uid       = "loki"
+            access    = "proxy"
+            url       = "http://loki-gateway.monitoring.svc.cluster.local"
+            isDefault = false
+            jsonData  = { maxLines = 1000 }
+          }]
         }
 
         extraManifests = [
@@ -340,6 +349,85 @@ locals {
             }
           },
         ]
+      })
+    },
+    {
+      name       = "loki"
+      namespace  = "monitoring"
+      repository = "ghcr.io/grafana-community/helm-charts"
+      chart      = "loki"
+      revision   = "18.13.1"
+      values = yamlencode({
+        deploymentMode = "Monolithic"
+
+        loki = {
+          auth_enabled = false
+          commonConfig = { replication_factor = 1 }
+          storage      = { type = "filesystem" }
+          schemaConfig = {
+            configs = [{
+              from         = "2024-04-01"
+              store        = "tsdb"
+              object_store = "filesystem"
+              schema       = "v13"
+              index        = { prefix = "loki_index_", period = "24h" }
+            }]
+          }
+          limits_config = {
+            allow_structured_metadata = true
+            retention_period          = "168h"
+            volume_enabled            = true
+          }
+          compactor = {
+            retention_enabled    = true
+            delete_request_store = "filesystem"
+          }
+        }
+
+        singleBinary = {
+          replicas     = 1
+          nodeSelector = { role = "general" }
+          persistence = {
+            enabled      = true
+            storageClass = "nexus-gp3"
+            size         = "20Gi"
+            whenDeleted  = "Retain"
+            whenScaled   = "Retain"
+          }
+          resources = {
+            requests = { cpu = "250m", memory = "512Mi" }
+            limits   = { cpu = "1", memory = "2Gi" }
+          }
+        }
+
+        gateway = {
+          enabled      = true
+          nodeSelector = { role = "general" }
+          resources = {
+            requests = { cpu = "50m", memory = "64Mi" }
+            limits   = { cpu = "250m", memory = "256Mi" }
+          }
+        }
+
+        chunksCache  = { enabled = false }
+        resultsCache = { enabled = false }
+        minio        = { enabled = false }
+        lokiCanary = {
+          enabled = true
+          resources = {
+            requests = { cpu = "10m", memory = "32Mi" }
+            limits   = { cpu = "100m", memory = "128Mi" }
+          }
+        }
+        monitoring = {
+          dashboards     = { enabled = true }
+          rules          = { enabled = true }
+          serviceMonitor = { enabled = true }
+        }
+
+        backend = { replicas = 0 }
+        read    = { replicas = 0 }
+        write   = { replicas = 0 }
       })
     },
   ]
@@ -394,6 +482,7 @@ locals {
         "https://aws.github.io/eks-charts",
         "https://prometheus-community.github.io/helm-charts",
         "https://kubernetes-sigs.github.io/external-dns",
+        "ghcr.io/grafana-community/helm-charts",
       ]
       destinations = [
         { server = "https://kubernetes.default.svc", namespace = "kube-system" },
