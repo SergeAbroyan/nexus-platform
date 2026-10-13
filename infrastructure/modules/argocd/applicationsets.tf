@@ -296,15 +296,36 @@ locals {
             requests = { cpu = "100m", memory = "256Mi" }
             limits   = { cpu = "500m", memory = "1Gi" }
           }
-          additionalDataSources = [{
-            name      = "Loki"
-            type      = "loki"
-            uid       = "loki"
-            access    = "proxy"
-            url       = "http://loki-gateway.monitoring.svc.cluster.local"
-            isDefault = false
-            jsonData  = { maxLines = 1000 }
-          }]
+          additionalDataSources = [
+            {
+              name      = "Loki"
+              type      = "loki"
+              uid       = "loki"
+              access    = "proxy"
+              url       = "http://loki-gateway.monitoring.svc.cluster.local"
+              isDefault = false
+              jsonData  = { maxLines = 1000 }
+            },
+            {
+              name      = "Tempo"
+              type      = "tempo"
+              uid       = "tempo"
+              access    = "proxy"
+              url       = "http://tempo.monitoring.svc.cluster.local:3200"
+              isDefault = false
+              jsonData = {
+                httpMethod = "GET"
+                nodeGraph  = { enabled = true }
+                tracesToLogsV2 = {
+                  datasourceUid      = "loki"
+                  spanStartTimeShift = "-1m"
+                  spanEndTimeShift   = "1m"
+                  filterByTraceID    = true
+                  filterBySpanID     = false
+                }
+              }
+            },
+          ]
         }
 
         extraManifests = [
@@ -428,6 +449,63 @@ locals {
         backend = { replicas = 0 }
         read    = { replicas = 0 }
         write   = { replicas = 0 }
+      })
+    },
+    {
+      name       = "tempo"
+      namespace  = "monitoring"
+      repository = "ghcr.io/grafana-community/helm-charts"
+      chart      = "tempo"
+      revision   = "3.0.0"
+      values = yamlencode({
+        replicas = 1
+
+        tempo = {
+          reportingEnabled = false
+          retention        = "168h"
+          receivers = {
+            otlp = {
+              protocols = {
+                grpc = { endpoint = "0.0.0.0:4317" }
+                http = { endpoint = "0.0.0.0:4318" }
+              }
+            }
+          }
+          securityContext = {
+            allowPrivilegeEscalation = false
+            readOnlyRootFilesystem   = true
+            capabilities             = { drop = ["ALL"] }
+          }
+          resources = {
+            requests = { cpu = "250m", memory = "512Mi" }
+            limits   = { cpu = "1", memory = "2Gi" }
+          }
+        }
+
+        securityContext = {
+          runAsNonRoot = true
+          runAsUser    = 10001
+          runAsGroup   = 10001
+          fsGroup      = 10001
+          seccompProfile = {
+            type = "RuntimeDefault"
+          }
+        }
+        serviceAccount = {
+          create                       = true
+          automountServiceAccountToken = false
+        }
+        service = { type = "ClusterIP" }
+        persistence = {
+          enabled                        = true
+          enableStatefulSetAutoDeletePVC = false
+          storageClassName               = "nexus-gp3"
+          accessModes                    = ["ReadWriteOnce"]
+          size                           = "20Gi"
+        }
+        nodeSelector   = { role = "general" }
+        serviceMonitor = { enabled = true, interval = "30s" }
+        tempoQuery     = { enabled = false }
       })
     },
     {

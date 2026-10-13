@@ -144,6 +144,14 @@ native OTLP endpoint. The collector excludes its own logs to avoid a feedback
 loop and exposes only its internal metrics port; unused telemetry receivers are
 disabled. Delivery retries and an in-memory queue absorb short Loki outages.
 
+Argo CD installs Tempo in its single-binary mode as the DEV tracing backend.
+Tempo accepts OTLP traces only inside the cluster, retains them for seven days
+on a retained `20Gi` encrypted `nexus-gp3` volume, and publishes metrics for
+Prometheus through a ServiceMonitor. Grafana provisions Tempo automatically and
+can correlate traces with Loki logs by trace ID. This local-storage topology is
+appropriate for DEV; production should use object storage and a distributed,
+high-availability design.
+
 Argo CD installs ExternalDNS with a narrowly scoped Pod Identity role. It
 creates `nexus.platform.com` from the Istio gateway Service after AWS assigns
 the NLB hostname. The NLB terminates HTTPS with ACM and redirects HTTP to
