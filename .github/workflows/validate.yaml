@@ -1,0 +1,40 @@
+name: Validate Infrastructure
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: infrastructure-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform and Terragrunt checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.16.3
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: 1.1.5
+          tf_path: terraform
+
+      - name: Check formatting and Terragrunt configuration
+        run: make check
+
+      - name: Validate every Terraform module
+        run: make validate-modules

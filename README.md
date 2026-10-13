@@ -82,6 +82,13 @@ Check formatting, Terragrunt configuration, and whitespace errors:
 make check
 ```
 
+Initialize and validate every reusable Terraform module without configuring a
+backend or contacting AWS:
+
+```bash
+make validate-modules
+```
+
 Print the dependency graph:
 
 ```bash
@@ -131,3 +138,11 @@ the NLB hostname. The NLB terminates HTTPS with ACM and redirects HTTP to
 HTTPS. Its scheme remains `internal`, so the hostname is reachable only from
 networks that can reach the VPC; publishing it later requires a separate,
 explicit public-access decision.
+
+## Continuous validation
+
+`.github/workflows/validate.yaml` runs for pull requests and pushes to `main`.
+It installs pinned Terraform and Terragrunt versions, runs the repository
+formatting and HCL checks, and initializes and validates every module with its
+backend disabled. The workflow has read-only repository permission and no AWS
+credentials, so it cannot plan, apply, or destroy infrastructure.
