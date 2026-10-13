@@ -2,7 +2,7 @@
 **/.terraform/*
 
 # Reusable modules inherit provider selections from each Terragrunt deployment
-infrastructure/modules/*/.terraform.lock.hcl
+infrastructure/modules/*/.terraform.lock*.hcl
 
 # Terraform state contains infrastructure details and may contain secrets
 *.tfstate

@@ -224,9 +224,15 @@ locals {
 
         prometheus = {
           prometheusSpec = {
-            retention     = "7d"
-            retentionSize = "16GB"
-            nodeSelector  = { role = "general" }
+            retention                           = "7d"
+            retentionSize                       = "16GB"
+            nodeSelector                        = { role = "general" }
+            podMonitorSelectorNilUsesHelmValues = false
+            podMonitorSelector                  = {}
+            podMonitorNamespaceSelector         = {}
+            ruleSelectorNilUsesHelmValues       = false
+            ruleSelector                        = {}
+            ruleNamespaceSelector               = {}
             resources = {
               requests = { cpu = "500m", memory = "1Gi" }
               limits   = { cpu = "2", memory = "3Gi" }
