@@ -144,5 +144,9 @@ explicit public-access decision.
 `.github/workflows/validate.yaml` runs for pull requests and pushes to `main`.
 It installs pinned Terraform and Terragrunt versions, runs the repository
 formatting and HCL checks, and initializes and validates every module with its
-backend disabled. The workflow has read-only repository permission and no AWS
-credentials, so it cannot plan, apply, or destroy infrastructure.
+backend disabled. TFLint checks every reusable module for Terraform issues, and
+Checkov scans the infrastructure configuration for security misconfigurations.
+Checkov excludes `CKV_TF_1` because Nexus uses Terraform Registry modules pinned
+to exact versions; commit hashes are applicable to modules sourced from Git.
+The workflow has read-only repository permission and no AWS credentials, so it
+cannot plan, apply, or destroy infrastructure.
