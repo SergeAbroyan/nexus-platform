@@ -50,9 +50,18 @@ locals {
         meshConfig = {
           enablePrometheusMerge = true
           enableTracing         = true
+          extensionProviders = [{
+            name = "otel-tracing"
+            opentelemetry = {
+              service = "otel-traces.monitoring.svc.cluster.local"
+              port    = 4317
+              resource_detectors = {
+                environment = {}
+              }
+            }
+          }]
           defaultConfig = {
             holdApplicationUntilProxyStarts = true
-            tracing                         = { sampling = 1 }
           }
           outboundTrafficPolicy = { mode = "ALLOW_ANY" }
         }
@@ -506,6 +515,147 @@ locals {
         nodeSelector   = { role = "general" }
         serviceMonitor = { enabled = true, interval = "30s" }
         tempoQuery     = { enabled = false }
+      })
+    },
+    {
+      name       = "otel-traces"
+      namespace  = "monitoring"
+      repository = "ghcr.io/open-telemetry/opentelemetry-helm-charts"
+      chart      = "opentelemetry-collector"
+      revision   = "0.172.0"
+      values = yamlencode({
+        fullnameOverride = "otel-traces"
+        mode             = "deployment"
+        replicaCount     = 2
+
+        image = {
+          repository = "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib"
+        }
+        command = { name = "otelcol-contrib" }
+
+        alternateConfig = {
+          extensions = {
+            health_check = { endpoint = "$${env:MY_POD_IP}:13133" }
+          }
+          receivers = {
+            otlp = {
+              protocols = {
+                grpc = { endpoint = "$${env:MY_POD_IP}:4317" }
+                http = { endpoint = "$${env:MY_POD_IP}:4318" }
+              }
+            }
+          }
+          exporters = {
+            "otlp/tempo" = {
+              endpoint = "tempo.monitoring.svc.cluster.local:4317"
+              tls      = { insecure = true }
+              sending_queue = {
+                enabled       = true
+                num_consumers = 4
+                queue_size    = 1000
+              }
+              retry_on_failure = {
+                enabled          = true
+                initial_interval = "5s"
+                max_interval     = "30s"
+                max_elapsed_time = "300s"
+              }
+            }
+          }
+          processors = {
+            memory_limiter = {
+              check_interval         = "5s"
+              limit_percentage       = 80
+              spike_limit_percentage = 25
+            }
+            batch = {
+              send_batch_size = 1024
+              timeout         = "5s"
+            }
+          }
+          service = {
+            extensions = ["health_check"]
+            pipelines = {
+              traces = {
+                receivers  = ["otlp"]
+                processors = ["memory_limiter", "batch"]
+                exporters  = ["otlp/tempo"]
+              }
+            }
+          }
+        }
+
+        ports = {
+          otlp = {
+            enabled       = true
+            containerPort = 4317
+            servicePort   = 4317
+            protocol      = "TCP"
+          }
+          "otlp-http" = {
+            enabled       = true
+            containerPort = 4318
+            servicePort   = 4318
+            protocol      = "TCP"
+          }
+          "jaeger-compact" = { enabled = false }
+          "jaeger-thrift"  = { enabled = false }
+          "jaeger-grpc"    = { enabled = false }
+          zipkin           = { enabled = false }
+          metrics = {
+            enabled       = true
+            containerPort = 8888
+            servicePort   = 8888
+            protocol      = "TCP"
+          }
+        }
+
+        service        = { type = "ClusterIP" }
+        serviceAccount = { automountServiceAccountToken = false }
+        nodeSelector   = { role = "general" }
+        topologySpreadConstraints = [{
+          maxSkew           = 1
+          topologyKey       = "kubernetes.io/hostname"
+          whenUnsatisfiable = "ScheduleAnyway"
+          labelSelector = {
+            matchLabels = { "app.kubernetes.io/instance" = "otel-traces" }
+          }
+        }]
+        podSecurityContext = {
+          runAsNonRoot = true
+          runAsUser    = 10001
+          runAsGroup   = 10001
+          fsGroup      = 10001
+          seccompProfile = {
+            type = "RuntimeDefault"
+          }
+        }
+        securityContext = {
+          allowPrivilegeEscalation = false
+          readOnlyRootFilesystem   = true
+          capabilities             = { drop = ["ALL"] }
+        }
+        resources = {
+          requests = { cpu = "100m", memory = "128Mi" }
+          limits   = { cpu = "500m", memory = "512Mi" }
+        }
+        podDisruptionBudget = { enabled = true, minAvailable = 1 }
+        podMonitor          = { enabled = true }
+
+        extraManifests = [{
+          apiVersion = "telemetry.istio.io/v1"
+          kind       = "Telemetry"
+          metadata = {
+            name      = "mesh-default"
+            namespace = "istio-system"
+          }
+          spec = {
+            tracing = [{
+              providers                = [{ name = "otel-tracing" }]
+              randomSamplingPercentage = 1
+            }]
+          }
+        }]
       })
     },
     {

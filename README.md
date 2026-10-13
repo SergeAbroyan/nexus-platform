@@ -152,6 +152,14 @@ can correlate traces with Loki logs by trace ID. This local-storage topology is
 appropriate for DEV; production should use object storage and a distributed,
 high-availability design.
 
+A separate two-replica OpenTelemetry Collector Deployment is the internal trace
+gateway. Applications and Istio proxies send OTLP spans to this gateway, which
+limits memory, batches spans, and retries delivery to Tempo during short
+outages. An Istio mesh-wide Telemetry policy selects the collector and samples
+1% of requests. The gateway is deliberately separate from the node-level log
+collectors because the two pipelines have different placement and scaling
+requirements.
+
 Argo CD installs ExternalDNS with a narrowly scoped Pod Identity role. It
 creates `nexus.platform.com` from the Istio gateway Service after AWS assigns
 the NLB hostname. The NLB terminates HTTPS with ACM and redirects HTTP to
