@@ -138,6 +138,12 @@ exposes only an internal gateway Service. Grafana receives the Loki data source
 through Helm provisioning. This single-replica filesystem design keeps DEV
 costs low; a production environment should use S3-backed replicated Loki.
 
+An OpenTelemetry Collector DaemonSet reads container logs from every worker
+node, enriches them with Kubernetes metadata, and sends batches to Loki's
+native OTLP endpoint. The collector excludes its own logs to avoid a feedback
+loop and exposes only its internal metrics port; unused telemetry receivers are
+disabled. Delivery retries and an in-memory queue absorb short Loki outages.
+
 Argo CD installs ExternalDNS with a narrowly scoped Pod Identity role. It
 creates `nexus.platform.com` from the Istio gateway Service after AWS assigns
 the NLB hostname. The NLB terminates HTTPS with ACM and redirects HTTP to

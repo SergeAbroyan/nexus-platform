@@ -430,6 +430,110 @@ locals {
         write   = { replicas = 0 }
       })
     },
+    {
+      name       = "otel-logs"
+      namespace  = "monitoring"
+      repository = "ghcr.io/open-telemetry/opentelemetry-helm-charts"
+      chart      = "opentelemetry-collector"
+      revision   = "0.172.0"
+      values = yamlencode({
+        fullnameOverride = "otel-logs"
+        mode             = "daemonset"
+
+        image = {
+          repository = "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib"
+        }
+        command = { name = "otelcol-contrib" }
+
+        presets = {
+          logsCollection = {
+            enabled              = true
+            includeCollectorLogs = false
+            storeCheckpoints     = false
+          }
+          kubernetesAttributes = { enabled = true }
+        }
+
+        alternateConfig = {
+          extensions = {
+            health_check = { endpoint = "$${env:MY_POD_IP}:13133" }
+          }
+          exporters = {
+            "otlphttp/loki" = {
+              endpoint = "http://loki-gateway.monitoring.svc.cluster.local/otlp"
+              sending_queue = {
+                enabled       = true
+                num_consumers = 4
+                queue_size    = 1000
+              }
+              retry_on_failure = {
+                enabled          = true
+                initial_interval = "5s"
+                max_interval     = "30s"
+                max_elapsed_time = "300s"
+              }
+            }
+          }
+          processors = {
+            memory_limiter = {
+              check_interval         = "5s"
+              limit_percentage       = 80
+              spike_limit_percentage = 25
+            }
+            batch = {
+              send_batch_size = 1024
+              timeout         = "5s"
+            }
+          }
+          service = {
+            extensions = ["health_check"]
+            pipelines = {
+              logs = {
+                receivers  = ["filelog"]
+                processors = ["memory_limiter", "batch"]
+                exporters  = ["otlphttp/loki"]
+              }
+            }
+          }
+        }
+
+        ports = {
+          otlp             = { enabled = false }
+          "otlp-http"      = { enabled = false }
+          "jaeger-compact" = { enabled = false }
+          "jaeger-thrift"  = { enabled = false }
+          "jaeger-grpc"    = { enabled = false }
+          zipkin           = { enabled = false }
+          metrics = {
+            enabled       = true
+            containerPort = 8888
+            servicePort   = 8888
+            protocol      = "TCP"
+          }
+        }
+
+        tolerations = [{ operator = "Exists" }]
+        podSecurityContext = {
+          runAsNonRoot = true
+          runAsUser    = 10001
+          runAsGroup   = 10001
+          fsGroup      = 10001
+          seccompProfile = {
+            type = "RuntimeDefault"
+          }
+        }
+        securityContext = {
+          allowPrivilegeEscalation = false
+          readOnlyRootFilesystem   = true
+          capabilities             = { drop = ["ALL"] }
+        }
+        resources = {
+          requests = { cpu = "100m", memory = "128Mi" }
+          limits   = { cpu = "500m", memory = "512Mi" }
+        }
+        podMonitor = { enabled = true }
+      })
+    },
   ]
 
   local_applications = [
@@ -483,6 +587,7 @@ locals {
         "https://prometheus-community.github.io/helm-charts",
         "https://kubernetes-sigs.github.io/external-dns",
         "ghcr.io/grafana-community/helm-charts",
+        "ghcr.io/open-telemetry/opentelemetry-helm-charts",
       ]
       destinations = [
         { server = "https://kubernetes.default.svc", namespace = "kube-system" },
