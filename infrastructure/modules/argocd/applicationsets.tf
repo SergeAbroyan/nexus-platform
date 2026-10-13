@@ -276,6 +276,15 @@ locals {
           }
           ingress      = { enabled = false }
           nodeSelector = { role = "general" }
+          sidecar = {
+            dashboards = {
+              enabled         = true
+              label           = "grafana_dashboard"
+              labelValue      = "1"
+              searchNamespace = "ALL"
+              provider        = { allowUiUpdates = false }
+            }
+          }
           persistence = {
             enabled          = true
             type             = "sts"
