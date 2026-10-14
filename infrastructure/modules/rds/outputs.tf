@@ -3,6 +3,11 @@ output "address" {
   value       = module.database.db_instance_address
 }
 
+output "identifier" {
+  description = "RDS instance identifier used by CloudWatch dimensions."
+  value       = module.database.db_instance_identifier
+}
+
 output "endpoint" {
   description = "PostgreSQL connection endpoint including the port."
   value       = module.database.db_instance_endpoint

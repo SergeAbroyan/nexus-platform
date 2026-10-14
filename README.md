@@ -40,6 +40,7 @@ KMS ───────────────┤                      ├─
   ├── RDS ────────────────────────────────┤
   ├── SQS                                 ├── Platform identities
   └── Valkey                              └── Workload identities
+RDS + Valkey + SQS ── CloudWatch alarms ── SNS alert notifications
 ECR ── CI identities
 DNS ── ACM certificate ───────────────────┤
   └── ExternalDNS identity ───────────────┘
@@ -142,6 +143,12 @@ deliver alert emails until that one-time confirmation is complete. The
 always-firing Prometheus `Watchdog` alert is routed to a null receiver so it
 does not generate email noise; firing and resolved operational alerts are sent
 to SNS.
+
+CloudWatch alarms use the same SNS topic for AWS-managed dependencies. They
+cover sustained RDS CPU pressure, low RDS storage, Valkey memory pressure on
+each cache node, old unprocessed jobs, and any message entering the SQS
+dead-letter queue. Thresholds live in `environment.hcl`, while both alarm and
+recovery transitions are delivered by email.
 
 Argo CD also installs Loki in monolithic mode for the DEV logging backend. Loki
 keeps seven days of logs on a retained `20Gi` encrypted `nexus-gp3` volume and

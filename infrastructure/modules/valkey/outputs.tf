@@ -8,6 +8,11 @@ output "replication_group_id" {
   value       = module.cache.replication_group_id
 }
 
+output "member_cluster_ids" {
+  description = "ElastiCache member cluster identifiers used by CloudWatch dimensions."
+  value       = module.cache.replication_group_member_clusters
+}
+
 output "primary_endpoint" {
   description = "Primary Valkey endpoint used for reads and writes."
   value       = module.cache.replication_group_primary_endpoint_address

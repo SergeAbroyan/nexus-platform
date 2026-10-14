@@ -105,6 +105,13 @@ locals {
   sqs_max_receive_count                 = 5
   sqs_kms_data_key_reuse_period_seconds = 300
 
+  alarm_period_seconds                           = 60
+  alarm_evaluation_periods                       = 5
+  rds_cpu_alarm_threshold_percent                = 80
+  rds_free_storage_alarm_threshold_bytes         = 5368709120
+  valkey_memory_alarm_threshold_percent          = 80
+  sqs_oldest_message_alarm_threshold_seconds     = 300
+
   application_namespace  = "nexus"
   dns_zone_name          = "platform.com"
   dns_force_destroy      = true
