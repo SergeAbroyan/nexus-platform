@@ -97,6 +97,50 @@ variable "external_dns_service_account" {
   }
 }
 
+variable "alertmanager_namespace" {
+  description = "Kubernetes namespace containing Alertmanager."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.alertmanager_namespace)) && length(var.alertmanager_namespace) <= 63
+    error_message = "The Alertmanager namespace must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
+variable "alertmanager_service_account" {
+  description = "Kubernetes service account used by Alertmanager."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.alertmanager_service_account)) && length(var.alertmanager_service_account) <= 63
+    error_message = "The Alertmanager service account must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
+variable "alert_sns_topic_arn" {
+  description = "SNS topic ARN to which Alertmanager may publish notifications."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:sns:[^:]+:[0-9]{12}:.+$", var.alert_sns_topic_arn))
+    error_message = "The alert topic must be a valid SNS topic ARN."
+  }
+}
+
+variable "alert_sns_kms_key_arn" {
+  description = "KMS key ARN encrypting the alert SNS topic."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.alert_sns_kms_key_arn))
+    error_message = "The alert topic encryption key must be a valid KMS key ARN."
+  }
+}
+
 variable "external_dns_hosted_zone_arn" {
   description = "Route 53 hosted-zone ARN ExternalDNS may modify."
   type        = string

@@ -52,3 +52,8 @@ output "external_dns_iam_role_arn" {
   description = "IAM role assumed by ExternalDNS through EKS Pod Identity."
   value       = module.external_dns.iam_role_arn
 }
+
+output "alertmanager_iam_role_arn" {
+  description = "IAM role assumed by Alertmanager through EKS Pod Identity."
+  value       = module.alertmanager.iam_role_arn
+}

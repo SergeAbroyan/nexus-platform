@@ -23,6 +23,10 @@ dependency "dns" {
   config_path = "../dns"
 }
 
+dependency "notifications" {
+  config_path = "../notifications"
+}
+
 locals {
   environment_config = read_terragrunt_config(find_in_parent_folders("environment.hcl"))
 }
@@ -44,6 +48,10 @@ inputs = {
   external_dns_namespace           = local.environment_config.locals.external_dns_namespace
   external_dns_service_account     = local.environment_config.locals.external_dns_service_account
   external_dns_hosted_zone_arn     = dependency.dns.outputs.zone_arn
+  alertmanager_namespace           = local.environment_config.locals.alertmanager_namespace
+  alertmanager_service_account     = local.environment_config.locals.alertmanager_service_account
+  alert_sns_topic_arn              = dependency.notifications.outputs.topic_arn
+  alert_sns_kms_key_arn            = dependency.kms.outputs.key_arns["sns"]
   rds_master_user_secret_arn       = dependency.rds.outputs.master_user_secret_arn
   rds_kms_key_arn                  = dependency.kms.outputs.key_arns["rds"]
   additional_secret_arns           = [dependency.platform_secrets.outputs.grafana_admin_secret_arn]

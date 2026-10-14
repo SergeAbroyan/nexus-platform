@@ -173,6 +173,28 @@ variable "grafana_admin_secret_arn" {
   }
 }
 
+variable "alert_sns_topic_arn" {
+  description = "SNS topic ARN that receives Alertmanager notifications."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:sns:[^:]+:[0-9]{12}:.+$", var.alert_sns_topic_arn))
+    error_message = "The alert topic must be a valid SNS topic ARN."
+  }
+}
+
+variable "alertmanager_service_account" {
+  description = "Kubernetes service account associated with Alertmanager's Pod Identity role."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.alertmanager_service_account)) && length(var.alertmanager_service_account) <= 63
+    error_message = "The Alertmanager service account must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
 variable "valkey_host" {
   description = "Private Valkey primary endpoint used by the Nexus API."
   type        = string

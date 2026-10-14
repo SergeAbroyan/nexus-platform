@@ -43,6 +43,10 @@ dependency "dns" {
   config_path = "../dns"
 }
 
+dependency "notifications" {
+  config_path = "../notifications"
+}
+
 dependencies {
   paths = [
     "../platform-identity",
@@ -104,6 +108,8 @@ inputs = {
   database_username   = dependency.rds.outputs.username
   database_secret_arn = dependency.rds.outputs.master_user_secret_arn
   grafana_admin_secret_arn = dependency.platform_secrets.outputs.grafana_admin_secret_arn
+  alert_sns_topic_arn         = dependency.notifications.outputs.topic_arn
+  alertmanager_service_account = local.environment_config.locals.alertmanager_service_account
   valkey_host          = dependency.valkey.outputs.primary_endpoint
   valkey_port          = dependency.valkey.outputs.port
   valkey_username      = dependency.valkey.outputs.application_user_name

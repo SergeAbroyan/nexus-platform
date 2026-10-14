@@ -39,12 +39,16 @@ locals {
     "rds",
     "redis",
     "secrets",
+    "sns",
     "sqs",
   ]
 
   kms_deletion_window_in_days = 7
 
   platform_secret_recovery_window_days = 7
+  alert_email_address                  = "alerts@example.com"
+  alertmanager_namespace               = "monitoring"
+  alertmanager_service_account         = "alertmanager"
 
   ecr_repository_names = [
     "api",

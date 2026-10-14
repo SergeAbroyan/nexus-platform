@@ -36,6 +36,7 @@ VPC ───────────────┐
                    ├── EKS ───────────────┐
 KMS ───────────────┤                      ├── Argo CD + ApplicationSets
   ├── Platform secrets ───────────────────┤
+  ├── SNS alert notifications ────────────┤
   ├── RDS ────────────────────────────────┤
   ├── SQS                                 ├── Platform identities
   └── Valkey                              └── Workload identities
@@ -131,6 +132,16 @@ workloads start. For example, the Grafana administrator password is generated
 ephemerally and written directly to AWS Secrets Manager, so its value is not
 stored in Git or Terraform state. External Secrets materializes it only in the
 `monitoring` namespace.
+
+The notifications unit creates a KMS-encrypted SNS topic and subscribes the
+environment's alert email address. Alertmanager uses EKS Pod Identity with only
+`sns:Publish` and the required KMS permissions; it does not store AWS access
+keys. After the first apply, open the AWS subscription message sent to
+`alerts@example.com` and choose **Confirm subscription**. AWS does not
+deliver alert emails until that one-time confirmation is complete. The
+always-firing Prometheus `Watchdog` alert is routed to a null receiver so it
+does not generate email noise; firing and resolved operational alerts are sent
+to SNS.
 
 Argo CD also installs Loki in monolithic mode for the DEV logging backend. Loki
 keeps seven days of logs on a retained `20Gi` encrypted `nexus-gp3` volume and
