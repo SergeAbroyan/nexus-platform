@@ -150,6 +150,12 @@ each cache node, old unprocessed jobs, and any message entering the SQS
 dead-letter queue. Thresholds live in `environment.hcl`, while both alarm and
 recovery transitions are delivered by email.
 
+Grafana also receives a provisioned CloudWatch data source. Its pod uses a
+dedicated EKS Pod Identity role and the AWS SDK default credential chain, so no
+access keys are stored in Helm values or Kubernetes Secrets. The role is
+read-only and permits CloudWatch metric, alarm, and log queries plus the AWS
+resource-discovery calls required by Grafana's query editor.
+
 Argo CD also installs Loki in monolithic mode for the DEV logging backend. Loki
 keeps seven days of logs on a retained `20Gi` encrypted `nexus-gp3` volume and
 exposes only an internal gateway Service. Grafana receives the Loki data source

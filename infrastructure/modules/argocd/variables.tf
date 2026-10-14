@@ -195,6 +195,17 @@ variable "alertmanager_service_account" {
   }
 }
 
+variable "grafana_service_account" {
+  description = "Kubernetes service account associated with Grafana's Pod Identity role."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.grafana_service_account)) && length(var.grafana_service_account) <= 63
+    error_message = "The Grafana service account must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
 variable "valkey_host" {
   description = "Private Valkey primary endpoint used by the Nexus API."
   type        = string

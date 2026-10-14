@@ -49,6 +49,8 @@ locals {
   alert_email_address                  = "alerts@example.com"
   alertmanager_namespace               = "monitoring"
   alertmanager_service_account         = "alertmanager"
+  grafana_namespace                    = "monitoring"
+  grafana_service_account              = "grafana"
 
   ecr_repository_names = [
     "api",

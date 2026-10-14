@@ -119,6 +119,28 @@ variable "alertmanager_service_account" {
   }
 }
 
+variable "grafana_namespace" {
+  description = "Kubernetes namespace containing Grafana."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.grafana_namespace)) && length(var.grafana_namespace) <= 63
+    error_message = "The Grafana namespace must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
+variable "grafana_service_account" {
+  description = "Kubernetes service account used by Grafana."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.grafana_service_account)) && length(var.grafana_service_account) <= 63
+    error_message = "The Grafana service account must be a valid Kubernetes DNS label no longer than 63 characters."
+  }
+}
+
 variable "alert_sns_topic_arn" {
   description = "SNS topic ARN to which Alertmanager may publish notifications."
   type        = string

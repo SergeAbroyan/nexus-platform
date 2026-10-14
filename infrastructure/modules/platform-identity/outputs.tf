@@ -57,3 +57,8 @@ output "alertmanager_iam_role_arn" {
   description = "IAM role assumed by Alertmanager through EKS Pod Identity."
   value       = module.alertmanager.iam_role_arn
 }
+
+output "grafana_iam_role_arn" {
+  description = "IAM role assumed by Grafana through EKS Pod Identity."
+  value       = module.grafana.iam_role_arn
+}

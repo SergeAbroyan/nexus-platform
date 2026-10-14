@@ -309,6 +309,10 @@ locals {
         }
 
         grafana = {
+          serviceAccount = {
+            create = true
+            name   = var.grafana_service_account
+          }
           admin = {
             existingSecret = "grafana-admin"
             userKey        = "admin-user"
@@ -337,6 +341,17 @@ locals {
             limits   = { cpu = "500m", memory = "1Gi" }
           }
           additionalDataSources = [
+            {
+              name      = "CloudWatch"
+              type      = "cloudwatch"
+              uid       = "cloudwatch"
+              access    = "proxy"
+              isDefault = false
+              jsonData = {
+                authType      = "default"
+                defaultRegion = var.aws_region
+              }
+            },
             {
               name      = "Loki"
               type      = "loki"
