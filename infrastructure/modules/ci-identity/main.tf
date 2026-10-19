@@ -71,14 +71,16 @@ module "infrastructure_ci" {
 
   enable_github_oidc = true
   oidc_subjects = [
-    "${var.github_owner}/${var.infrastructure_repository}:ref:refs/heads/${var.deployment_branch}",
+    "${var.github_owner}/${var.infrastructure_repository}:environment:${var.infrastructure_environment}",
   ]
 
   create_inline_policy = true
   inline_policy_permissions = {
     ManageNexusInfrastructure = {
       actions = [
+        "acm:*",
         "autoscaling:*",
+        "budgets:*",
         "cloudwatch:*",
         "ec2:*",
         "ecr:*",
@@ -89,7 +91,9 @@ module "infrastructure_ci" {
         "kms:*",
         "logs:*",
         "rds:*",
+        "route53:*",
         "secretsmanager:*",
+        "sns:*",
         "sqs:*",
         "ssm:*",
       ]

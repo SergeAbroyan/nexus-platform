@@ -21,17 +21,6 @@ variable "zone_name" {
   }
 }
 
-variable "application_hostname" {
-  description = "Fully qualified Nexus hostname covered by the ACM certificate."
-  type        = string
-  nullable    = false
-
-  validation {
-    condition     = can(regex("^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$", var.application_hostname))
-    error_message = "The application hostname must be a valid lowercase DNS name."
-  }
-}
-
 variable "force_destroy" {
   description = "Whether Terraform may delete the hosted zone when records remain."
   type        = bool

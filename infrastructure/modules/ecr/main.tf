@@ -8,7 +8,8 @@ module "repository" {
   repository_type                 = "private"
   repository_image_tag_mutability = "IMMUTABLE"
   repository_image_scan_on_push   = true
-  repository_encryption_type      = "AES256"
+  repository_encryption_type      = "KMS"
+  repository_kms_key              = var.kms_key_arn
   repository_force_delete         = var.force_delete
 
   attach_repository_policy = false

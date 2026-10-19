@@ -39,8 +39,8 @@ dependency "platform_secrets" {
   config_path = "../platform-secrets"
 }
 
-dependency "dns" {
-  config_path = "../dns"
+dependency "certificate" {
+  config_path = "../certificate"
 }
 
 dependency "notifications" {
@@ -100,7 +100,7 @@ inputs = {
   environment          = local.environment_config.locals.environment
   dns_zone_name        = local.environment_config.locals.dns_zone_name
   nexus_ingress_host   = local.environment_config.locals.nexus_ingress_host
-  nexus_certificate_arn = dependency.dns.outputs.certificate_arn
+  nexus_certificate_arn = dependency.certificate.outputs.certificate_arn
   ecr_registry_url    = dependency.ecr.outputs.registry_url
   database_host       = dependency.rds.outputs.address
   database_port       = dependency.rds.outputs.port

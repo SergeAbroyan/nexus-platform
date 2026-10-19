@@ -65,6 +65,17 @@ variable "deployment_branch" {
   }
 }
 
+variable "infrastructure_environment" {
+  description = "GitHub Environment trusted to deploy infrastructure."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = length(trimspace(var.infrastructure_environment)) > 0 && !strcontains(var.infrastructure_environment, ":")
+    error_message = "The GitHub Environment cannot be empty or contain a colon."
+  }
+}
+
 variable "ecr_repository_arns" {
   description = "ECR repository ARNs where application CI may push images."
   type        = set(string)

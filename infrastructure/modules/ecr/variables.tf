@@ -29,6 +29,17 @@ variable "repository_names" {
   }
 }
 
+variable "kms_key_arn" {
+  description = "KMS key ARN used to encrypt all ECR repositories."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.kms_key_arn))
+    error_message = "The ECR encryption key must be a valid KMS key ARN."
+  }
+}
+
 variable "force_delete" {
   description = "Whether repositories may be destroyed while they still contain images."
   type        = bool

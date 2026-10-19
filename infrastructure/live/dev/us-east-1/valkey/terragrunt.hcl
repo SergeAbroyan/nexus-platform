@@ -30,7 +30,7 @@ inputs = {
   vpc_id                     = dependency.vpc.outputs.vpc_id
   data_subnet_ids             = dependency.vpc.outputs.data_subnet_ids
   eks_node_security_group_id = dependency.eks.outputs.node_security_group_id
-  kms_key_arn                 = dependency.kms.outputs.key_arns["redis"]
+  kms_key_arn                 = dependency.kms.outputs.key_arns["valkey"]
 
   engine_version          = local.environment_config.locals.valkey_engine_version
   node_type               = local.environment_config.locals.valkey_node_type

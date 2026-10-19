@@ -11,8 +11,13 @@ dependency "kms" {
   config_path = "../kms"
 }
 
+dependency "ci_identity" {
+  config_path = "../ci-identity"
+}
+
 locals {
   environment_config = read_terragrunt_config(find_in_parent_folders("environment.hcl"))
+  ci_runner_cidr      = get_env("CI_RUNNER_PUBLIC_ACCESS_CIDR", "")
 }
 
 terraform {
@@ -30,10 +35,19 @@ inputs = {
   cluster_encryption_key_arn = dependency.kms.outputs.key_arns["eks"]
   ebs_encryption_key_arn     = dependency.kms.outputs.key_arns["ebs"]
 
-  cluster_admin_principal_arns = [get_aws_caller_identity_arn()]
+  cluster_admin_principal_arns = concat(
+    [
+      for user_name in local.environment_config.locals.eks_admin_user_names :
+      "arn:aws:iam::${include.root.locals.aws_account_id}:user/${user_name}"
+    ],
+    [dependency.ci_identity.outputs.infrastructure_ci_iam_role_arn],
+  )
 
-  endpoint_public_access       = local.environment_config.locals.eks_endpoint_public_access
-  endpoint_public_access_cidrs = local.environment_config.locals.eks_endpoint_public_access ? [get_env("EKS_PUBLIC_ACCESS_CIDR")] : []
+  endpoint_public_access = local.environment_config.locals.eks_endpoint_public_access
+  endpoint_public_access_cidrs = local.environment_config.locals.eks_endpoint_public_access ? concat(
+    [get_env("EKS_PUBLIC_ACCESS_CIDR")],
+    local.ci_runner_cidr == "" ? [] : [local.ci_runner_cidr],
+  ) : []
 
   deletion_protection              = local.environment_config.locals.eks_deletion_protection
   control_plane_log_retention_days = local.environment_config.locals.eks_control_plane_log_retention_days

@@ -22,6 +22,10 @@ infrastructure/
         └── <component>/        # Deployable Terragrunt units
 ```
 
+Every reusable module contains only `module` blocks for managed infrastructure.
+Provider lock files are committed so local runs and CI select the same provider
+builds; `.terraform/` working directories and state files remain ignored.
+
 The bootstrap state bucket is deliberately outside `infrastructure/live`. It
 must exist before Terragrunt can store remote state, and normal environment
 destruction must not delete the bucket that contains the state history.
@@ -32,6 +36,7 @@ Terragrunt calculates the order from `dependency` blocks instead of relying on
 a manually maintained script.
 
 ```text
+Budget
 VPC ───────────────┐
                    ├── EKS ───────────────┐
 KMS ───────────────┤                      ├── Argo CD + ApplicationSets
@@ -41,7 +46,7 @@ KMS ───────────────┤                      ├─
   ├── SQS                                 ├── Platform identities
   └── Valkey                              └── Workload identities
 RDS + Valkey + SQS ── CloudWatch alarms ── SNS alert notifications
-ECR ── CI identities
+KMS ── ECR ── CI identities ── EKS administrator access
 DNS ── ACM certificate ───────────────────┤
   └── ExternalDNS identity ───────────────┘
 ```
@@ -51,8 +56,10 @@ reverse dependency order.
 
 ## Prerequisites
 
-- Terraform 1.10 or newer, but earlier than 2.0
-- Terragrunt
+- Terraform 1.16.6
+- Terragrunt 1.1.5
+- kubectl 1.34, 1.35, or 1.36 for the EKS 1.35 cluster
+- AWS CLI
 - AWS credentials for account `123456789012`
 - Access to the existing state bucket `nexus-terraform-state-123456789012`
 - Ownership of `platform.com` before deployment
@@ -65,10 +72,19 @@ aws sts get-caller-identity
 
 The DEV configuration assumes `nexus.platform.com`. Terraform creates its
 Route 53 public hosted zone and ACM certificate, but it cannot purchase the
-domain. After buying `platform.com`, copy the `dns` unit's `name_servers`
-output into the registrar's nameserver settings before applying downstream
-units. ACM waits for DNS validation and cannot finish until that delegation is
-active.
+domain. DNS and the certificate are intentionally separate state units: this
+allows the hosted zone to exist before ACM starts waiting for validation.
+
+The bootstrap bucket already exists. Its local bootstrap state should be moved
+to that protected bucket once, without recreating the bucket:
+
+```bash
+make bootstrap-init
+```
+
+Terraform asks for confirmation before migrating the local state to
+`bootstrap/terraform.tfstate`. Keep the bootstrap unit separate from normal
+environment destruction because it stores all other state files.
 
 ## Commands
 
@@ -100,10 +116,15 @@ make graph
 Plan, apply, or destroy the complete DEV environment:
 
 ```bash
+export EKS_PUBLIC_ACCESS_CIDR="$(curl -fsS https://checkip.amazonaws.com)/32"
 make plan
 make apply
 make destroy
 ```
+
+Use the smallest trusted CIDR possible, normally your current public IP with a
+`/32` suffix. The preflight target checks that the CIDR is present and that the
+active AWS account is `123456789012` before any plan, apply, or destroy.
 
 Terragrunt prompts before applying or destroying the queued units. Do not add
 `--non-interactive` during a manual deployment unless unattended execution is
@@ -116,11 +137,30 @@ the Makefile:
 make plan NEXUS_ENVIRONMENT=staging NEXUS_REGION=eu-central-1
 ```
 
-On a brand-new environment, downstream state outputs do not exist yet, so a
-complete `plan` can stop when it reaches a dependency with no state. The first
-`apply` creates components in dependency order. After that initial deployment,
-`make plan` can evaluate the entire graph normally. Avoid fake dependency
-outputs for deployment plans because they can hide wiring errors.
+On a brand-new environment, create and delegate DNS before the complete apply:
+
+```bash
+make apply-dns
+make dns-nameservers
+```
+
+Buy `platform.com`, copy those four name servers to the registrar, and wait for
+delegation to propagate. Then run `make apply`. ACM validation cannot complete
+until public DNS delegation works. Downstream state outputs also do not exist
+before the first apply, so a complete first `plan` may stop at a dependency;
+the first `apply` creates units in dependency order. Later plans evaluate the
+entire graph normally. Fake deployment outputs are deliberately not used
+because they can conceal wiring errors.
+
+The EKS API is limited to `EKS_PUBLIC_ACCESS_CIDR`. Cluster administrator
+entries use stable IAM ARNs: the `admin1` IAM user and the infrastructure CI
+role. They never use the temporary identity of whoever happens to run
+Terragrunt. For a team or production account, replace the IAM user with an AWS
+IAM Identity Center role in `environment.hcl`.
+
+The budget unit creates a USD 200 monthly DEV budget and emails alerts at 50%,
+80%, and 100% of actual spend, plus a 100% forecast alert. Change
+`monthly_budget_amount_usd` in `environment.hcl` to match your own limit.
 
 ## Deployment boundary
 
@@ -200,5 +240,25 @@ backend disabled. TFLint checks every reusable module for Terraform issues, and
 Checkov scans the infrastructure configuration for security misconfigurations.
 Checkov excludes `CKV_TF_1` because Nexus uses Terraform Registry modules pinned
 to exact versions; commit hashes are applicable to modules sourced from Git.
-The workflow has read-only repository permission and no AWS credentials, so it
-cannot plan, apply, or destroy infrastructure.
+Project-owned Terraform is the blocking Checkov gate. A second informational
+scan downloads and audits all external modules; it does not block because those
+packages contain inactive optional resources that static analysis cannot
+reliably eliminate. The validation workflow has read-only repository permission
+and no AWS credentials, so it cannot plan, apply, or destroy infrastructure.
+GitHub Actions are pinned to immutable commit SHAs, and Dependabot opens grouped
+weekly updates so those pins stay maintainable.
+
+`.github/workflows/deploy.yaml` is a manual plan/apply workflow. The first
+deployment is manual because the infrastructure CI role does not exist until
+Terraform creates it. After that apply, add these GitHub repository variables:
+
+- `AWS_INFRASTRUCTURE_ROLE_ARN`: the `ci-identity` unit's
+  `infrastructure_ci_iam_role_arn` output
+- `EKS_PUBLIC_ACCESS_CIDR`: your persistent trusted administrator CIDR
+
+Configure required reviewers on the GitHub `dev` environment before allowing
+the `apply` option. The workflow temporarily adds its current runner CIDR while
+preserving the administrator CIDR. It uses GitHub OIDC, so it needs no
+permanent AWS access keys. The role includes the AWS services used by this
+stack and access to only the Nexus Terraform state bucket; continue narrowing
+service permissions from CloudTrail after real deployment behavior is known.

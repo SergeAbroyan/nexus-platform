@@ -23,6 +23,7 @@ inputs = {
   infrastructure_repository = local.environment_config.locals.github_infrastructure_repository
   applications_repository   = local.environment_config.locals.github_applications_repository
   deployment_branch         = local.environment_config.locals.github_deployment_branch
+  infrastructure_environment = local.environment_config.locals.github_infrastructure_environment
 
   ecr_repository_arns        = values(dependency.ecr.outputs.repository_arns)
   terraform_state_bucket_name = include.root.locals.state_bucket_name

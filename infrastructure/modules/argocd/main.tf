@@ -40,18 +40,26 @@ locals {
   }
 }
 
-resource "helm_release" "argocd" {
-  name             = "argocd"
-  repository       = var.chart_repository
-  chart            = "argo-cd"
-  version          = var.chart_version
-  namespace        = var.namespace
-  create_namespace = true
+module "argocd" {
+  source  = "terraform-module/release/helm"
+  version = "2.9.1"
 
-  atomic          = true
-  cleanup_on_fail = true
-  wait            = true
-  timeout         = 900
+  namespace  = var.namespace
+  repository = var.chart_repository
+
+  app = {
+    name             = "argocd"
+    chart            = "argo-cd"
+    version          = var.chart_version
+    deploy           = true
+    create_namespace = true
+    atomic           = true
+    cleanup_on_fail  = true
+    wait             = true
+    recreate_pods    = false
+    lint             = false
+    timeout          = 900
+  }
 
   values = [yamlencode(local.values)]
 }

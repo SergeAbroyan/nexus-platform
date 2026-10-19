@@ -19,6 +19,10 @@ module "vpc" {
 
   map_public_ip_on_launch = false
 
+  manage_default_security_group  = true
+  default_security_group_ingress = []
+  default_security_group_egress  = []
+
   create_database_subnet_group       = false
   create_database_subnet_route_table = true
   create_database_nat_gateway_route  = false

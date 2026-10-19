@@ -18,17 +18,3 @@ module "zone" {
     Name = var.zone_name
   })
 }
-
-module "certificate" {
-  source  = "terraform-aws-modules/acm/aws"
-  version = "6.3.1"
-
-  domain_name         = var.application_hostname
-  zone_id             = module.zone.id
-  validation_method   = "DNS"
-  wait_for_validation = true
-
-  tags = merge(local.standard_tags, {
-    Name = var.application_hostname
-  })
-}

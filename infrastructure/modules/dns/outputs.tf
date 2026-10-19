@@ -12,8 +12,3 @@ output "name_servers" {
   description = "Name servers that must be configured at the domain registrar."
   value       = module.zone.name_servers
 }
-
-output "certificate_arn" {
-  description = "Validated ACM certificate ARN for the Nexus hostname."
-  value       = module.certificate.acm_certificate_arn
-}

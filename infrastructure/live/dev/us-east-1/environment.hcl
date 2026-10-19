@@ -35,9 +35,10 @@ locals {
 
   kms_key_names = [
     "ebs",
+    "ecr",
     "eks",
     "rds",
-    "redis",
+    "valkey",
     "secrets",
     "sns",
     "sqs",
@@ -47,6 +48,7 @@ locals {
 
   platform_secret_recovery_window_days = 7
   alert_email_address                  = "alerts@example.com"
+  monthly_budget_amount_usd            = 200
   alertmanager_namespace               = "monitoring"
   alertmanager_service_account         = "alertmanager"
   grafana_namespace                    = "monitoring"
@@ -66,6 +68,7 @@ locals {
   eks_endpoint_public_access           = true
   eks_deletion_protection              = false
   eks_control_plane_log_retention_days = 7
+  eks_admin_user_names                 = ["your-iam-user"]
 
   eks_node_group = {
     instance_types = ["t3.large"]
@@ -173,4 +176,5 @@ locals {
   github_infrastructure_repository = "nexus-platform"
   github_applications_repository   = "nexus-applications"
   github_deployment_branch         = "main"
+  github_infrastructure_environment = "dev"
 }
