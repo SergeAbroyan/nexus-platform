@@ -126,6 +126,13 @@ variable "nexus_certificate_arn" {
   }
 }
 
+variable "enable_cdn_origin_mode" {
+  description = "Configures the Istio NLB as a non-TLS CloudFront VPC origin when true."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "ecr_registry_url" {
   description = "ECR registry hosting the Nexus application images."
   type        = string

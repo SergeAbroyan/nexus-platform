@@ -23,6 +23,8 @@ permissions:
 env:
   AWS_REGION: us-east-1
   EKS_PUBLIC_ACCESS_CIDR: ${{ vars.EKS_PUBLIC_ACCESS_CIDR }}
+  NEXUS_DNS_ZONE_NAME: ${{ vars.NEXUS_DNS_ZONE_NAME }}
+  NEXUS_INGRESS_HOST: ${{ vars.NEXUS_INGRESS_HOST }}
   TF_IN_AUTOMATION: "true"
 
 jobs:

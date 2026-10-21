@@ -118,9 +118,21 @@ locals {
   sqs_oldest_message_alarm_threshold_seconds     = 300
 
   application_namespace  = "nexus"
-  dns_zone_name          = "platform.com"
+  dns_zone_name          = get_env("NEXUS_DNS_ZONE_NAME", "platform.com")
   dns_force_destroy      = true
-  nexus_ingress_host     = "nexus.platform.com"
+  nexus_ingress_host     = get_env("NEXUS_INGRESS_HOST", "nexus.${local.dns_zone_name}")
+  enable_cdn_origin_mode = false
+  enable_cdn             = false
+  enable_waf             = false
+
+  cdn_origin_load_balancer_arn = ""
+  cdn_origin_domain_name       = ""
+  cdn_origin_http_port         = 443
+  cdn_origin_https_port        = 443
+  cdn_origin_protocol_policy   = "http-only"
+  cdn_api_path_pattern         = "/api/*"
+  cdn_price_class              = "PriceClass_100"
+  waf_rate_limit_per_five_minutes = 2000
   api_service_account    = "api"
   worker_service_account = "worker"
 

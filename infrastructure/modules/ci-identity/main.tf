@@ -81,6 +81,7 @@ module "infrastructure_ci" {
         "acm:*",
         "autoscaling:*",
         "budgets:*",
+        "cloudfront:*",
         "cloudwatch:*",
         "ec2:*",
         "ecr:*",
@@ -96,6 +97,7 @@ module "infrastructure_ci" {
         "sns:*",
         "sqs:*",
         "ssm:*",
+        "wafv2:*",
       ]
       resources = ["*"]
     }

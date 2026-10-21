@@ -1,11 +1,12 @@
 locals {
-  application_name_template       = "{{ `{{ .name }}` }}"
-  application_namespace_template  = "{{ `{{ .namespace }}` }}"
-  application_repository_template = "{{ `{{ .repository }}` }}"
-  application_revision_template   = "{{ `{{ .revision }}` }}"
-  application_chart_template      = "{{ `{{ .chart }}` }}"
-  application_path_template       = "{{ `{{ .path }}` }}"
-  application_values_template     = "{{ `{{ .values }}` }}"
+  application_name_template        = "{{ `{{ .name }}` }}"
+  application_namespace_template   = "{{ `{{ .namespace }}` }}"
+  application_repository_template  = "{{ `{{ .repository }}` }}"
+  application_revision_template    = "{{ `{{ .revision }}` }}"
+  application_chart_template       = "{{ `{{ .chart }}` }}"
+  application_path_template        = "{{ `{{ .path }}` }}"
+  application_values_template      = "{{ `{{ .values }}` }}"
+  application_values_file_template = "{{ `{{ .valuesFile }}` }}"
 
   external_applications = [
     {
@@ -86,13 +87,14 @@ locals {
         service = {
           type              = "LoadBalancer"
           loadBalancerClass = "service.k8s.aws/nlb"
-          annotations = {
+          annotations = merge({
             "service.beta.kubernetes.io/aws-load-balancer-scheme"          = "internal"
             "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" = "ip"
-            "service.beta.kubernetes.io/aws-load-balancer-ssl-cert"        = var.nexus_certificate_arn
-            "service.beta.kubernetes.io/aws-load-balancer-ssl-ports"       = "https"
-            "external-dns.kubernetes.io/hostname"                          = var.nexus_ingress_host
-          }
+            }, var.enable_cdn_origin_mode ? {} : {
+            "service.beta.kubernetes.io/aws-load-balancer-ssl-cert"  = var.nexus_certificate_arn
+            "service.beta.kubernetes.io/aws-load-balancer-ssl-ports" = "https"
+            "external-dns.kubernetes.io/hostname"                    = var.nexus_ingress_host
+          })
           ports = [
             { name = "http", port = 80, targetPort = 80, protocol = "TCP" },
             { name = "https", port = 443, targetPort = 8443, protocol = "TCP" },
@@ -830,7 +832,7 @@ locals {
     {
       name      = "cloudbeaver"
       namespace = "cloudbeaver"
-      path      = "charts/tools/cloudbeaver"
+      path      = "charts/platform/cloudbeaver"
       values    = "{}"
     },
     {
@@ -839,6 +841,56 @@ locals {
       path      = "charts/platform/ingress"
       values = yamlencode({
         host = var.nexus_ingress_host
+      })
+    },
+  ]
+
+  nexus_applications = [
+    {
+      name       = "nexus-runtime"
+      path       = "charts/applications/nexus-runtime"
+      valuesFile = "runtime-values.yaml"
+      values     = "{}"
+    },
+    {
+      name       = "nexus-frontend"
+      path       = "charts/applications/frontend"
+      valuesFile = "frontend-values.yaml"
+      values = yamlencode({
+        image = { registry = var.ecr_registry_url }
+      })
+    },
+    {
+      name       = "nexus-api"
+      path       = "charts/applications/api"
+      valuesFile = "api-values.yaml"
+      values = yamlencode({
+        image = { registry = var.ecr_registry_url }
+        config = {
+          awsRegion = var.aws_region
+          database = {
+            host = var.database_host, port = tostring(var.database_port)
+            name = var.database_name, user = var.database_username
+          }
+          valkey = {
+            host     = var.valkey_host, port = tostring(var.valkey_port)
+            username = var.valkey_username, cacheName = var.valkey_cache_name
+          }
+          sqs = { queueURL = var.sqs_queue_url }
+        }
+        externalSecret = { enabled = true, remoteSecretKey = var.database_secret_arn }
+      })
+    },
+    {
+      name       = "nexus-worker"
+      path       = "charts/applications/worker"
+      valuesFile = "worker-values.yaml"
+      values = yamlencode({
+        image = { registry = var.ecr_registry_url }
+        config = {
+          awsRegion = var.aws_region
+          sqs       = { queueURL = var.sqs_queue_url }
+        }
       })
     },
   ]
@@ -957,10 +1009,12 @@ locals {
     kind       = "ApplicationSet"
     metadata   = { name = "nexus-applications", namespace = var.namespace }
     spec = {
-      generators = [{ list = { elements = [{ environment = var.environment }] } }]
+      goTemplate        = true
+      goTemplateOptions = ["missingkey=error"]
+      generators        = [{ list = { elements = local.nexus_applications } }]
       template = {
         metadata = {
-          name       = "nexus-${var.environment}"
+          name       = local.application_name_template
           finalizers = ["resources-finalizer.argocd.argoproj.io"]
         }
         spec = {
@@ -969,26 +1023,14 @@ locals {
             {
               repoURL        = var.gitops_repository
               targetRevision = var.gitops_revision
-              path           = "charts/applications/nexus"
+              path           = local.application_path_template
               helm = {
-                releaseName = "nexus"
-                valueFiles  = ["$values/environments/${var.environment}/values.yaml"]
-                values = yamlencode({
-                  image = { registry = var.ecr_registry_url }
-                  config = {
-                    awsRegion = var.aws_region
-                    database = {
-                      host = var.database_host, port = tostring(var.database_port)
-                      name = var.database_name, user = var.database_username
-                    }
-                    valkey = {
-                      host     = var.valkey_host, port = tostring(var.valkey_port)
-                      username = var.valkey_username, cacheName = var.valkey_cache_name
-                    }
-                    sqs = { queueURL = var.sqs_queue_url }
-                  }
-                  externalSecret = { enabled = true, remoteSecretKey = var.database_secret_arn }
-                })
+                releaseName = local.application_name_template
+                valueFiles = [
+                  "$values/environments/global-values.yaml",
+                  "$values/environments/${var.environment}/${local.application_values_file_template}",
+                ]
+                values = local.application_values_template
               }
             },
             {

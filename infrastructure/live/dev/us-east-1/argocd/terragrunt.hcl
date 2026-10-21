@@ -101,6 +101,7 @@ inputs = {
   dns_zone_name        = local.environment_config.locals.dns_zone_name
   nexus_ingress_host   = local.environment_config.locals.nexus_ingress_host
   nexus_certificate_arn = dependency.certificate.outputs.certificate_arn
+  enable_cdn_origin_mode = local.environment_config.locals.enable_cdn_origin_mode
   ecr_registry_url    = dependency.ecr.outputs.registry_url
   database_host       = dependency.rds.outputs.address
   database_port       = dependency.rds.outputs.port

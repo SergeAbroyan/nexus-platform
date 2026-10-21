@@ -48,6 +48,7 @@ KMS ───────────────┤                      ├─
 RDS + Valkey + SQS ── CloudWatch alarms ── SNS alert notifications
 KMS ── ECR ── CI identities ── EKS administrator access
 DNS ── ACM certificate ───────────────────┤
+  └── Optional CloudFront + WAF edge layer
   └── ExternalDNS identity ───────────────┘
 ```
 
@@ -62,7 +63,7 @@ reverse dependency order.
 - AWS CLI
 - AWS credentials for account `123456789012`
 - Access to the existing state bucket `nexus-terraform-state-123456789012`
-- Ownership of `platform.com` before deployment
+- Ownership of the domain configured by `NEXUS_DNS_ZONE_NAME`
 
 Confirm the active AWS identity before any deployment:
 
@@ -70,10 +71,12 @@ Confirm the active AWS identity before any deployment:
 aws sts get-caller-identity
 ```
 
-The DEV configuration assumes `nexus.platform.com`. Terraform creates its
-Route 53 public hosted zone and ACM certificate, but it cannot purchase the
-domain. DNS and the certificate are intentionally separate state units: this
-allows the hosted zone to exist before ACM starts waiting for validation.
+The local defaults use `platform.com` and `nexus.platform.com` as the planned
+zone and application hostname. Override both values with a domain you own before
+deployment. Terraform creates the Route 53 public hosted zone and ACM
+certificate, but it cannot purchase or delegate the domain. DNS and the
+certificate are intentionally separate state units so the hosted zone can exist
+before ACM starts waiting for validation.
 
 The bootstrap bucket already exists. Its local bootstrap state should be moved
 to that protected bucket once, without recreating the bucket:
@@ -117,6 +120,8 @@ Plan, apply, or destroy the complete DEV environment:
 
 ```bash
 export EKS_PUBLIC_ACCESS_CIDR="$(curl -fsS https://checkip.amazonaws.com)/32"
+export NEXUS_DNS_ZONE_NAME="example-owned-domain.com"
+export NEXUS_INGRESS_HOST="nexus.${NEXUS_DNS_ZONE_NAME}"
 make plan
 make apply
 make destroy
@@ -144,8 +149,9 @@ make apply-dns
 make dns-nameservers
 ```
 
-Buy `platform.com`, copy those four name servers to the registrar, and wait for
-delegation to propagate. Then run `make apply`. ACM validation cannot complete
+Buy or select the domain configured by `NEXUS_DNS_ZONE_NAME`, copy those four
+name servers to the registrar, and wait for delegation to propagate. Then run
+`make apply`. ACM validation cannot complete
 until public DNS delegation works. Downstream state outputs also do not exist
 before the first apply, so a complete first `plan` may stop at a dependency;
 the first `apply` creates units in dependency order. Later plans evaluate the
@@ -161,6 +167,12 @@ IAM Identity Center role in `environment.hcl`.
 The budget unit creates a USD 200 monthly DEV budget and emails alerts at 50%,
 80%, and 100% of actual spend, plus a 100% forecast alert. Change
 `monthly_budget_amount_usd` in `environment.hcl` to match your own limit.
+
+The GitHub `dev` environment must define `AWS_INFRASTRUCTURE_ROLE_ARN`,
+`EKS_PUBLIC_ACCESS_CIDR`, `NEXUS_DNS_ZONE_NAME`, and `NEXUS_INGRESS_HOST`.
+`EKS_PUBLIC_ACCESS_CIDR` is the persistent trusted administrator CIDR. The
+deployment workflow also discovers its temporary runner address for every run
+and adds that address only for the duration of the plan or apply.
 
 ## Deployment boundary
 
@@ -225,11 +237,62 @@ collectors because the two pipelines have different placement and scaling
 requirements.
 
 Argo CD installs ExternalDNS with a narrowly scoped Pod Identity role. It
-creates `nexus.platform.com` from the Istio gateway Service after AWS assigns
+creates the configured Nexus hostname from the Istio gateway Service after AWS assigns
 the NLB hostname. The NLB terminates HTTPS with ACM and redirects HTTP to
 HTTPS. Its scheme remains `internal`, so the hostname is reachable only from
 networks that can reach the VPC; publishing it later requires a separate,
 explicit public-access decision.
+
+## Optional CDN and WAF
+
+The `edge` Terragrunt unit provides an environment-controlled production edge
+layer. DEV keeps `enable_cdn_origin_mode`, `enable_cdn`, and `enable_waf` set to
+`false`, so it creates no CloudFront, WAF, or edge DNS resources and adds no CDN
+cost. A production environment can enable them without changing reusable
+Terraform code.
+
+When enabled, the edge module creates a CloudFront distribution, Route 53 A and
+AAAA aliases, HTTP/2 and HTTP/3 support, TLS 1.2 viewer enforcement, compression,
+browser security headers, and an optional WAF. Static frontend requests use
+CloudFront's optimized managed cache policy. `/api/*` accepts all API methods
+but uses the managed disabled-cache policy and forwards viewer request data to
+the origin.
+
+The WAF baseline enables the AWS common, known-bad-input, and IP-reputation
+managed rule groups plus a configurable per-IP rate limit. WAF metrics and
+sampled requests are enabled in CloudWatch. Set `enable_waf = false` to use
+CloudFront without WAF; enabling WAF while the CDN is disabled is rejected by
+Terraform validation.
+
+CloudFront uses a VPC origin so the origin load balancer remains private. The
+Istio NLB is created asynchronously by Argo CD, so a new production environment
+uses a deliberate two-stage bootstrap. First set `enable_cdn_origin_mode = true`
+while leaving `enable_cdn = false`, apply, and wait for the ingress NLB. Then
+copy its ARN and DNS name into `cdn_origin_load_balancer_arn` and
+`cdn_origin_domain_name`, enable CDN and WAF, and apply again. This avoids
+fragile plan-time load balancer discovery and prevents CloudFront from racing an
+NLB listener update.
+
+When `enable_cdn_origin_mode = true`, Argo CD omits the NLB TLS annotations and
+the ExternalDNS application-hostname annotation. Port 443 remains a plain TCP
+listener forwarding HTTP to Istio's port 8443; CloudFront terminates public TLS
+and owns the application DNS aliases. This is required because CloudFront does
+not accept an NLB with a TLS listener as a VPC origin.
+
+Example production settings:
+
+```hcl
+enable_cdn_origin_mode = true
+enable_cdn             = true
+enable_waf             = true
+
+cdn_origin_load_balancer_arn    = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/net/example/abc123"
+cdn_origin_domain_name          = "internal-example.elb.us-east-1.amazonaws.com"
+cdn_origin_http_port            = 443
+cdn_origin_protocol_policy      = "http-only"
+cdn_price_class                 = "PriceClass_200"
+waf_rate_limit_per_five_minutes = 2000
+```
 
 ## Continuous validation
 
