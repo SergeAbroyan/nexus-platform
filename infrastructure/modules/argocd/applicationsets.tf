@@ -853,14 +853,6 @@ locals {
       values     = "{}"
     },
     {
-      name       = "nexus-frontend"
-      path       = "charts/applications/frontend"
-      valuesFile = "frontend-values.yaml"
-      values = yamlencode({
-        image = { registry = var.ecr_registry_url }
-      })
-    },
-    {
       name       = "nexus-api"
       path       = "charts/applications/api"
       valuesFile = "api-values.yaml"

@@ -253,7 +253,7 @@ Terraform code.
 
 When enabled, the edge module creates a CloudFront distribution, Route 53 A and
 AAAA aliases, HTTP/2 and HTTP/3 support, TLS 1.2 viewer enforcement, compression,
-browser security headers, and an optional WAF. Static frontend requests use
+browser security headers, and an optional WAF. Static web-page requests use
 CloudFront's optimized managed cache policy. `/api/*` accepts all API methods
 but uses the managed disabled-cache policy and forwards viewer request data to
 the origin.

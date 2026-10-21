@@ -56,7 +56,6 @@ locals {
 
   ecr_repository_names = [
     "api",
-    "frontend",
     "worker",
   ]
 
