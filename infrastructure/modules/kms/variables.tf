@@ -34,6 +34,23 @@ variable "key_names" {
   }
 }
 
+variable "key_service_principals" {
+  description = "AWS service principals, by key name, that may encrypt and decrypt with a key without an IAM role, such as CloudWatch publishing to an encrypted SNS topic."
+  type        = map(list(string))
+  default     = {}
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for key_name, principals in var.key_service_principals :
+      contains(var.key_names, key_name) &&
+      length(principals) > 0 &&
+      alltrue([for principal in principals : can(regex("^[a-z0-9.-]+\\.amazonaws\\.com$", principal))])
+    ])
+    error_message = "Each entry must name a key in key_names and list AWS service principals such as cloudwatch.amazonaws.com."
+  }
+}
+
 variable "deletion_window_in_days" {
   description = "Number of days AWS waits before permanently deleting a scheduled KMS key."
   type        = number

@@ -12,6 +12,18 @@ module "kms" {
   multi_region            = false
   deletion_window_in_days = var.deletion_window_in_days
 
+  key_statements = contains(keys(var.key_service_principals), each.key) ? [
+    {
+      sid       = "AllowAWSServicePrincipals"
+      actions   = ["kms:Decrypt", "kms:GenerateDataKey*"]
+      resources = ["*"]
+      principals = [{
+        type        = "Service"
+        identifiers = var.key_service_principals[each.key]
+      }]
+    },
+  ] : null
+
   computed_aliases = {
     this = {
       name = "${var.project_name}/${var.environment}/${each.key}"

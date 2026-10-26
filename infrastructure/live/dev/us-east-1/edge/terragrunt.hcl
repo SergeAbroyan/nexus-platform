@@ -5,7 +5,7 @@ include "root" {
 
 locals {
   environment_config = read_terragrunt_config(find_in_parent_folders("environment.hcl"))
-  enable_cdn          = local.environment_config.locals.enable_cdn
+  enable_cdn         = local.environment_config.locals.enable_cdn
 }
 
 dependency "certificate" {
@@ -39,7 +39,7 @@ inputs = {
   origin_https_port        = local.environment_config.locals.cdn_origin_https_port
   origin_protocol_policy   = local.environment_config.locals.cdn_origin_protocol_policy
 
-  api_path_pattern                     = local.environment_config.locals.cdn_api_path_pattern
-  price_class                          = local.environment_config.locals.cdn_price_class
-  waf_rate_limit_per_five_minutes      = local.environment_config.locals.waf_rate_limit_per_five_minutes
+  api_path_pattern                = local.environment_config.locals.cdn_api_path_pattern
+  price_class                     = local.environment_config.locals.cdn_price_class
+  waf_rate_limit_per_five_minutes = local.environment_config.locals.waf_rate_limit_per_five_minutes
 }

@@ -24,6 +24,7 @@ format:
 
 check:
 	$(TERRAFORM) fmt -check -recursive infrastructure
+	$(TERRAGRUNT) hcl fmt --check
 	$(TERRAGRUNT) hcl validate --working-dir $(LIVE_DIRECTORY)
 	git diff --check
 

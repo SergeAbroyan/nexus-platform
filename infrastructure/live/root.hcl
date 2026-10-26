@@ -2,7 +2,7 @@ locals {
   environment_config = read_terragrunt_config(find_in_parent_folders("environment.hcl"))
 
   project_name        = get_env("TG_PROJECT_NAME", "nexus")
-  aws_account_id      = get_aws_account_id()
+  aws_account_id      = local.environment_config.locals.aws_account_id
   state_bucket_name   = "${local.project_name}-terraform-state-${local.aws_account_id}"
   state_bucket_region = get_env("TG_STATE_BUCKET_REGION", "us-east-1")
 
@@ -35,7 +35,8 @@ generate "aws_provider" {
 
   contents = <<-EOF
     provider "aws" {
-      region = "${local.aws_region}"
+      region              = "${local.aws_region}"
+      allowed_account_ids = ["${local.aws_account_id}"]
 
       default_tags {
         tags = {

@@ -36,7 +36,6 @@ locals {
     notifications = {
       enabled = false
     }
-    extraObjects = local.gitops_objects
   }
 }
 
@@ -62,4 +61,30 @@ module "argocd" {
   }
 
   values = [yamlencode(local.values)]
+}
+
+module "gitops" {
+  source  = "terraform-module/release/helm"
+  version = "2.9.1"
+
+  namespace  = var.namespace
+  repository = null
+
+  app = {
+    name             = "argocd-gitops"
+    chart            = "${path.module}/charts/gitops"
+    version          = "0.1.0"
+    deploy           = true
+    create_namespace = false
+    atomic           = true
+    cleanup_on_fail  = true
+    wait             = true
+    recreate_pods    = false
+    lint             = false
+    timeout          = 300
+  }
+
+  values = [yamlencode({ objects = local.gitops_objects })]
+
+  depends_on = [module.argocd]
 }

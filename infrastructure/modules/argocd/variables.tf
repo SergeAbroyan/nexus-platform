@@ -74,6 +74,18 @@ variable "karpenter_interruption_queue_name" {
   nullable    = false
 }
 
+variable "karpenter_replicas" {
+  description = "Karpenter controller replicas; each replica needs its own node outside Karpenter-managed capacity."
+  type        = number
+  default     = 2
+  nullable    = false
+
+  validation {
+    condition     = var.karpenter_replicas >= 1 && floor(var.karpenter_replicas) == var.karpenter_replicas
+    error_message = "Karpenter needs at least one whole controller replica."
+  }
+}
+
 variable "karpenter_node_iam_role_name" {
   description = "IAM role used by EC2 instances created by Karpenter."
   type        = string

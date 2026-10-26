@@ -17,7 +17,7 @@ dependency "ci_identity" {
 
 locals {
   environment_config = read_terragrunt_config(find_in_parent_folders("environment.hcl"))
-  ci_runner_cidr      = get_env("CI_RUNNER_PUBLIC_ACCESS_CIDR", "")
+  ci_runner_cidr     = get_env("CI_RUNNER_PUBLIC_ACCESS_CIDR", "")
 }
 
 terraform {
@@ -44,10 +44,10 @@ inputs = {
   )
 
   endpoint_public_access = local.environment_config.locals.eks_endpoint_public_access
-  endpoint_public_access_cidrs = local.environment_config.locals.eks_endpoint_public_access ? concat(
-    [get_env("EKS_PUBLIC_ACCESS_CIDR")],
-    local.ci_runner_cidr == "" ? [] : [local.ci_runner_cidr],
-  ) : []
+  endpoint_public_access_cidrs = local.environment_config.locals.eks_endpoint_public_access ? compact([
+    get_env("EKS_PUBLIC_ACCESS_CIDR", ""),
+    local.ci_runner_cidr,
+  ]) : []
 
   deletion_protection              = local.environment_config.locals.eks_deletion_protection
   control_plane_log_retention_days = local.environment_config.locals.eks_control_plane_log_retention_days

@@ -1,12 +1,21 @@
 locals {
-  application_name_template        = "{{ `{{ .name }}` }}"
-  application_namespace_template   = "{{ `{{ .namespace }}` }}"
-  application_repository_template  = "{{ `{{ .repository }}` }}"
-  application_revision_template    = "{{ `{{ .revision }}` }}"
-  application_chart_template       = "{{ `{{ .chart }}` }}"
-  application_path_template        = "{{ `{{ .path }}` }}"
-  application_values_template      = "{{ `{{ .values }}` }}"
-  application_values_file_template = "{{ `{{ .valuesFile }}` }}"
+  application_name_template        = "{{ .name }}"
+  application_namespace_template   = "{{ .namespace }}"
+  application_repository_template  = "{{ .repository }}"
+  application_revision_template    = "{{ .revision }}"
+  application_chart_template       = "{{ .chart }}"
+  application_path_template        = "{{ .path }}"
+  application_values_template      = "{{ .values }}"
+  application_values_file_template = "{{ .valuesFile }}"
+
+  application_sync_policy = {
+    automated   = { prune = true, selfHeal = true }
+    syncOptions = ["CreateNamespace=true", "ServerSideApply=true"]
+    retry = {
+      limit   = 10
+      backoff = { duration = "30s", factor = 2, maxDuration = "5m" }
+    }
+  }
 
   external_applications = [
     {
@@ -100,6 +109,10 @@ locals {
             { name = "https", port = 443, targetPort = 8443, protocol = "TCP" },
           ]
         }
+        securityContext = {
+          seccompProfile = { type = "RuntimeDefault" }
+          sysctls        = [{ name = "net.ipv4.ip_unprivileged_port_start", value = "0" }]
+        }
         nodeSelector = { role = "system" }
         autoscaling = {
           enabled     = true
@@ -149,6 +162,7 @@ locals {
       chart      = "karpenter"
       revision   = "1.14.1"
       values = yamlencode({
+        replicas       = var.karpenter_replicas
         serviceAccount = { create = true, name = "karpenter" }
         settings = {
           clusterName       = var.cluster_name
@@ -416,7 +430,7 @@ locals {
                   type = "Opaque"
                   data = {
                     admin-user     = "admin"
-                    admin-password = "{{ printf \"{{ `%s` }}\" \"{{ .adminPassword }}\" }}"
+                    admin-password = "{{ `{{ .adminPassword }}` }}"
                   }
                 }
               }
@@ -950,10 +964,7 @@ locals {
             server    = "https://kubernetes.default.svc"
             namespace = local.application_namespace_template
           }
-          syncPolicy = {
-            automated   = { prune = true, selfHeal = true }
-            syncOptions = ["CreateNamespace=true", "ServerSideApply=true"]
-          }
+          syncPolicy = local.application_sync_policy
         }
       }
     }
@@ -987,10 +998,7 @@ locals {
             server    = "https://kubernetes.default.svc"
             namespace = local.application_namespace_template
           }
-          syncPolicy = {
-            automated   = { prune = true, selfHeal = true }
-            syncOptions = ["CreateNamespace=true", "ServerSideApply=true"]
-          }
+          syncPolicy = local.application_sync_policy
         }
       }
     }
@@ -1030,10 +1038,7 @@ locals {
             },
           ]
           destination = { server = "https://kubernetes.default.svc", namespace = "nexus" }
-          syncPolicy = {
-            automated   = { prune = true, selfHeal = true }
-            syncOptions = ["CreateNamespace=true", "ServerSideApply=true"]
-          }
+          syncPolicy  = local.application_sync_policy
         }
       }
     }

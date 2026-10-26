@@ -23,7 +23,8 @@ infrastructure/
 ```
 
 Every reusable module contains only `module` blocks for managed infrastructure.
-Provider lock files are committed so local runs and CI select the same provider
+The Argo CD module also ships a small local Helm chart, `charts/gitops`, for
+its seed objects. Provider lock files are committed so local runs and CI select the same provider
 builds; `.terraform/` working directories and state files remain ignored.
 
 The bootstrap state bucket is deliberately outside `infrastructure/live`. It
@@ -61,7 +62,8 @@ reverse dependency order.
 - Terragrunt 1.1.5
 - kubectl 1.34, 1.35, or 1.36 for the EKS 1.35 cluster
 - AWS CLI
-- AWS credentials for account `123456789012`
+- AWS credentials for account `123456789012`, the `aws_account_id` in
+  `environment.hcl`; the AWS provider refuses to run against any other account
 - Access to the existing state bucket `nexus-terraform-state-123456789012`
 - Ownership of the domain configured by `NEXUS_DNS_ZONE_NAME`
 
@@ -180,6 +182,13 @@ Terraform installs the Argo CD controller after EKS is ready and seeds one
 AppProject plus categorized ApplicationSets. Argo CD then installs external
 platform charts and project-owned charts from `nexus-gitops`.
 
+The seed objects are a second Helm release, `argocd-gitops`, that runs after
+the Argo CD release. The Argo CD chart installs its CRDs as templates, so Helm
+cannot create an AppProject or ApplicationSet in the same release on a new
+cluster. Every generated Application retries a failed sync up to ten times
+with backoff, because on a new cluster some Applications sync before another
+Application has installed the CRDs they use.
+
 Terraform also creates platform credentials that must exist before Kubernetes
 workloads start. For example, the Grafana administrator password is generated
 ephemerally and written directly to AWS Secrets Manager, so its value is not
@@ -200,7 +209,9 @@ CloudWatch alarms use the same SNS topic for AWS-managed dependencies. They
 cover sustained RDS CPU pressure, low RDS storage, Valkey memory pressure on
 each cache node, old unprocessed jobs, and any message entering the SQS
 dead-letter queue. Thresholds live in `environment.hcl`, while both alarm and
-recovery transitions are delivered by email.
+recovery transitions are delivered by email. CloudWatch publishes as an AWS
+service rather than an IAM role, so `kms_key_service_principals` in
+`environment.hcl` adds `cloudwatch.amazonaws.com` to the SNS key policy.
 
 Grafana also receives a provisioned CloudWatch data source. Its pod uses a
 dedicated EKS Pod Identity role and the AWS SDK default credential chain, so no
@@ -299,7 +310,9 @@ waf_rate_limit_per_five_minutes = 2000
 `.github/workflows/validate.yaml` runs for pull requests and pushes to `main`.
 It installs pinned Terraform and Terragrunt versions, runs the repository
 formatting and HCL checks, and initializes and validates every module with its
-backend disabled. TFLint checks every reusable module for Terraform issues, and
+backend disabled. The HCL checks need no AWS credentials because the account ID
+comes from `environment.hcl` and the Helm provider reads the EKS connection
+from unit inputs. TFLint checks every reusable module for Terraform issues, and
 Checkov scans the infrastructure configuration for security misconfigurations.
 Checkov excludes `CKV_TF_1` because Nexus uses Terraform Registry modules pinned
 to exact versions; commit hashes are applicable to modules sourced from Git.

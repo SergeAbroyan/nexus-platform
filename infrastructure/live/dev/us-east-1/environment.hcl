@@ -1,6 +1,7 @@
 locals {
-  environment = "dev"
-  aws_region  = "us-east-1"
+  environment    = "dev"
+  aws_account_id = "123456789012"
+  aws_region     = "us-east-1"
 
   vpc_cidr = "10.10.0.0/16"
 
@@ -44,6 +45,10 @@ locals {
     "sqs",
   ]
 
+  kms_key_service_principals = {
+    sns = ["cloudwatch.amazonaws.com"]
+  }
+
   kms_deletion_window_in_days = 7
 
   platform_secret_recovery_window_days = 7
@@ -81,6 +86,7 @@ locals {
   karpenter_namespace                = "kube-system"
   karpenter_service_account          = "karpenter"
   karpenter_enable_spot_interruption = true
+  karpenter_controller_replicas      = 1
 
   rds_database_name         = "nexus"
   rds_master_username       = "nexus_admin"
@@ -109,12 +115,12 @@ locals {
   sqs_max_receive_count                 = 5
   sqs_kms_data_key_reuse_period_seconds = 300
 
-  alarm_period_seconds                           = 60
-  alarm_evaluation_periods                       = 5
-  rds_cpu_alarm_threshold_percent                = 80
-  rds_free_storage_alarm_threshold_bytes         = 5368709120
-  valkey_memory_alarm_threshold_percent          = 80
-  sqs_oldest_message_alarm_threshold_seconds     = 300
+  alarm_period_seconds                       = 60
+  alarm_evaluation_periods                   = 5
+  rds_cpu_alarm_threshold_percent            = 80
+  rds_free_storage_alarm_threshold_bytes     = 5368709120
+  valkey_memory_alarm_threshold_percent      = 80
+  sqs_oldest_message_alarm_threshold_seconds = 300
 
   application_namespace  = "nexus"
   dns_zone_name          = get_env("NEXUS_DNS_ZONE_NAME", "platform.com")
@@ -124,16 +130,16 @@ locals {
   enable_cdn             = false
   enable_waf             = false
 
-  cdn_origin_load_balancer_arn = ""
-  cdn_origin_domain_name       = ""
-  cdn_origin_http_port         = 443
-  cdn_origin_https_port        = 443
-  cdn_origin_protocol_policy   = "http-only"
-  cdn_api_path_pattern         = "/api/*"
-  cdn_price_class              = "PriceClass_100"
+  cdn_origin_load_balancer_arn    = ""
+  cdn_origin_domain_name          = ""
+  cdn_origin_http_port            = 443
+  cdn_origin_https_port           = 443
+  cdn_origin_protocol_policy      = "http-only"
+  cdn_api_path_pattern            = "/api/*"
+  cdn_price_class                 = "PriceClass_100"
   waf_rate_limit_per_five_minutes = 2000
-  api_service_account    = "api"
-  worker_service_account = "worker"
+  api_service_account             = "api"
+  worker_service_account          = "worker"
 
   load_balancer_controller_namespace       = "kube-system"
   load_balancer_controller_service_account = "aws-load-balancer-controller"
@@ -183,9 +189,9 @@ locals {
     }
   }
 
-  github_owner                     = "SergeAbroyan"
-  github_infrastructure_repository = "nexus-platform"
-  github_applications_repository   = "nexus-applications"
-  github_deployment_branch         = "main"
+  github_owner                      = "SergeAbroyan"
+  github_infrastructure_repository  = "nexus-platform"
+  github_applications_repository    = "nexus-applications"
+  github_deployment_branch          = "main"
   github_infrastructure_environment = "dev"
 }

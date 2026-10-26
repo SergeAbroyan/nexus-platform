@@ -15,5 +15,6 @@ inputs = {
   project_name            = include.root.locals.project_name
   environment             = local.environment_config.locals.environment
   key_names               = local.environment_config.locals.kms_key_names
+  key_service_principals  = local.environment_config.locals.kms_key_service_principals
   deletion_window_in_days = local.environment_config.locals.kms_deletion_window_in_days
 }

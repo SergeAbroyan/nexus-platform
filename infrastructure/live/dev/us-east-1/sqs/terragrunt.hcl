@@ -20,10 +20,10 @@ inputs = {
   environment  = local.environment_config.locals.environment
   kms_key_arn  = dependency.kms.outputs.key_arns["sqs"]
 
-  visibility_timeout_seconds         = local.environment_config.locals.sqs_visibility_timeout_seconds
-  message_retention_seconds          = local.environment_config.locals.sqs_message_retention_seconds
-  dlq_message_retention_seconds      = local.environment_config.locals.sqs_dlq_message_retention_seconds
-  receive_wait_time_seconds          = local.environment_config.locals.sqs_receive_wait_time_seconds
-  max_receive_count                  = local.environment_config.locals.sqs_max_receive_count
-  kms_data_key_reuse_period_seconds  = local.environment_config.locals.sqs_kms_data_key_reuse_period_seconds
+  visibility_timeout_seconds        = local.environment_config.locals.sqs_visibility_timeout_seconds
+  message_retention_seconds         = local.environment_config.locals.sqs_message_retention_seconds
+  dlq_message_retention_seconds     = local.environment_config.locals.sqs_dlq_message_retention_seconds
+  receive_wait_time_seconds         = local.environment_config.locals.sqs_receive_wait_time_seconds
+  max_receive_count                 = local.environment_config.locals.sqs_max_receive_count
+  kms_data_key_reuse_period_seconds = local.environment_config.locals.sqs_kms_data_key_reuse_period_seconds
 }
