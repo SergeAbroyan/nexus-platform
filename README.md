@@ -267,11 +267,17 @@ those subnets carry its discovery tag.
 
 Every Application reads its environment's values file from
 `nexus-gitops/environments/<environment>/<chart>-values.yaml`, and Terraform
-adds the region-specific values on top: the regional ECR registry, PostgreSQL,
-Valkey and SQS endpoints, the database secret and its region, the target
-group, and the Karpenter node role. Secrets never pass through Terraform
-state, Helm values, or Git; External Secrets reads them from Secrets Manager
-with EKS Pod Identity.
+adds what comes from AWS or what Terraform names on top: the environment name,
+the regional ECR registry, PostgreSQL, Valkey and SQS endpoints and the
+worker's SQS timings, the database secret and its region, the target group,
+and the Karpenter node role. Names that both repositories use, such as the
+application namespace, service accounts, storage class, ingress gateway, and
+trace collector, are defined once in `modules/platform/names.tf`. The
+`platform.tracing_sample_ratio` setting in `environment.hcl` drives both Istio
+and API trace sampling. The charts mark every injected value as required, so
+none of them is repeated in `nexus-gitops`. Secrets never pass through
+Terraform state, Helm values, or Git; External Secrets reads them from Secrets
+Manager with EKS Pod Identity.
 
 ## Alerts and observability
 

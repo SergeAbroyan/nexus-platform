@@ -63,8 +63,8 @@ locals {
           extensionProviders = [{
             name = "otel-tracing"
             opentelemetry = {
-              service = "otel-traces.monitoring.svc.cluster.local"
-              port    = 4317
+              service = local.trace_gateway_host
+              port    = local.trace_gateway.port
               resource_detectors = {
                 environment = {}
               }
@@ -86,13 +86,13 @@ locals {
       })
     },
     {
-      name       = "istio-ingress"
-      namespace  = "istio-ingress"
+      name       = local.ingress_gateway.name
+      namespace  = local.ingress_gateway.namespace
       repository = "https://blob.istio.io/istio-release/charts"
       chart      = "gateway"
       revision   = "1.30.5"
       values = yamlencode({
-        name = "istio-ingress"
+        name = local.ingress_gateway.name
         service = {
           type = "ClusterIP"
           ports = [
@@ -240,7 +240,7 @@ locals {
             storageSpec = {
               volumeClaimTemplate = {
                 spec = {
-                  storageClassName = "nexus-gp3"
+                  storageClassName = local.storage_class_name
                   accessModes      = ["ReadWriteOnce"]
                   resources        = { requests = { storage = "20Gi" } }
                 }
@@ -290,7 +290,7 @@ locals {
             storage = {
               volumeClaimTemplate = {
                 spec = {
-                  storageClassName = "nexus-gp3"
+                  storageClassName = local.storage_class_name
                   accessModes      = ["ReadWriteOnce"]
                   resources        = { requests = { storage = "5Gi" } }
                 }
@@ -323,7 +323,7 @@ locals {
           persistence = {
             enabled          = true
             type             = "sts"
-            storageClassName = "nexus-gp3"
+            storageClassName = local.storage_class_name
             accessModes      = ["ReadWriteOnce"]
             size             = "5Gi"
           }
@@ -456,7 +456,7 @@ locals {
           nodeSelector = { role = "general" }
           persistence = {
             enabled      = true
-            storageClass = "nexus-gp3"
+            storageClass = local.storage_class_name
             size         = "20Gi"
             whenDeleted  = "Retain"
             whenScaled   = "Retain"
@@ -545,7 +545,7 @@ locals {
         persistence = {
           enabled                        = true
           enableStatefulSetAutoDeletePVC = false
-          storageClassName               = "nexus-gp3"
+          storageClassName               = local.storage_class_name
           accessModes                    = ["ReadWriteOnce"]
           size                           = "20Gi"
         }
@@ -555,13 +555,13 @@ locals {
       })
     },
     {
-      name       = "otel-traces"
-      namespace  = "monitoring"
+      name       = local.trace_gateway.name
+      namespace  = local.trace_gateway.namespace
       repository = "ghcr.io/open-telemetry/opentelemetry-helm-charts"
       chart      = "opentelemetry-collector"
       revision   = "0.172.0"
       values = yamlencode({
-        fullnameOverride = "otel-traces"
+        fullnameOverride = local.trace_gateway.name
         mode             = "deployment"
         replicaCount     = 2
 
@@ -626,7 +626,7 @@ locals {
           otlp = {
             enabled       = true
             containerPort = 4317
-            servicePort   = 4317
+            servicePort   = local.trace_gateway.port
             protocol      = "TCP"
           }
           "otlp-http" = {
@@ -655,7 +655,7 @@ locals {
           topologyKey       = "kubernetes.io/hostname"
           whenUnsatisfiable = "ScheduleAnyway"
           labelSelector = {
-            matchLabels = { "app.kubernetes.io/instance" = "otel-traces" }
+            matchLabels = { "app.kubernetes.io/instance" = local.trace_gateway.name }
           }
         }]
         podSecurityContext = {
@@ -689,7 +689,7 @@ locals {
           spec = {
             tracing = [{
               providers                = [{ name = "otel-tracing" }]
-              randomSamplingPercentage = 1
+              randomSamplingPercentage = var.tracing_sample_ratio * 100
             }]
           }
         }]
@@ -818,24 +818,32 @@ locals {
       namespace  = "kube-system"
       path       = "charts/platform/storage"
       valuesFile = "storage-values.yaml"
-      values     = yamlencode({ kmsKeyArn = var.kms_key_arns["ebs"] })
+      values = yamlencode({
+        storageClassName = local.storage_class_name
+        kmsKeyArn        = var.kms_key_arns["ebs"]
+      })
     },
     {
       name       = "cloudbeaver"
       namespace  = "cloudbeaver"
       path       = "charts/platform/cloudbeaver"
       valuesFile = "cloudbeaver-values.yaml"
-      values     = "{}"
+      values     = yamlencode({ persistence = { storageClassName = local.storage_class_name } })
     },
     {
       name       = "ingress-config"
-      namespace  = "istio-ingress"
+      namespace  = local.ingress_gateway.namespace
       path       = "charts/platform/ingress"
       valuesFile = "ingress-values.yaml"
       values = yamlencode({
         host           = var.application_hostname
         targetGroupArn = module.ingress_load_balancer.target_groups["gateway"].arn
-        gateway        = { port = var.ingress_port }
+        gateway = {
+          port     = var.ingress_port
+          service  = local.ingress_gateway.name
+          selector = local.ingress_gateway.selector
+        }
+        nexus = { namespace = local.application_namespace }
       })
     },
   ]
@@ -845,14 +853,22 @@ locals {
       name       = "nexus-runtime"
       path       = "charts/applications/runtime"
       valuesFile = "runtime-values.yaml"
-      values     = "{}"
+      values     = yamlencode({ environment = var.environment })
     },
     {
       name       = "nexus-api"
       path       = "charts/applications/api"
       valuesFile = "api-values.yaml"
       values = yamlencode({
-        image = { registry = var.ecr_registry }
+        environment    = var.environment
+        image          = { registry = var.ecr_registry }
+        serviceAccount = { name = local.service_accounts.api.name }
+        observability = {
+          tracing = {
+            endpoint    = "http://${local.trace_gateway_host}:${local.trace_gateway.port}"
+            sampleRatio = tostring(var.tracing_sample_ratio)
+          }
+        }
         config = {
           awsRegion = var.region
           database = {
@@ -866,7 +882,6 @@ locals {
           sqs = { queueURL = var.queue.url }
         }
         externalSecret = {
-          enabled         = true
           remoteSecretKey = var.database.secret_arn
           region          = split(":", var.database.secret_arn)[3]
         }
@@ -877,10 +892,16 @@ locals {
       path       = "charts/applications/worker"
       valuesFile = "worker-values.yaml"
       values = yamlencode({
-        image = { registry = var.ecr_registry }
+        environment    = var.environment
+        image          = { registry = var.ecr_registry }
+        serviceAccount = { name = local.service_accounts.worker.name }
         config = {
           awsRegion = var.region
-          sqs       = { queueURL = var.queue.url }
+          sqs = {
+            queueURL                 = var.queue.url
+            waitTimeSeconds          = tostring(var.queue.receive_wait_time_seconds)
+            visibilityTimeoutSeconds = tostring(var.queue.visibility_timeout_seconds)
+          }
         }
       })
     },
@@ -909,9 +930,9 @@ locals {
         { server = "https://kubernetes.default.svc", namespace = "kube-system" },
         { server = "https://kubernetes.default.svc", namespace = "external-secrets" },
         { server = "https://kubernetes.default.svc", namespace = "istio-system" },
-        { server = "https://kubernetes.default.svc", namespace = "istio-ingress" },
+        { server = "https://kubernetes.default.svc", namespace = local.ingress_gateway.namespace },
         { server = "https://kubernetes.default.svc", namespace = "cloudbeaver" },
-        { server = "https://kubernetes.default.svc", namespace = "nexus" },
+        { server = "https://kubernetes.default.svc", namespace = local.application_namespace },
         { server = "https://kubernetes.default.svc", namespace = "monitoring" },
       ]
       clusterResourceWhitelist   = [{ group = "*", kind = "*" }]
@@ -1026,7 +1047,7 @@ locals {
               repoURL = var.gitops.repository, targetRevision = var.gitops.revision, ref = "values"
             },
           ]
-          destination = { server = "https://kubernetes.default.svc", namespace = "nexus" }
+          destination = { server = "https://kubernetes.default.svc", namespace = local.application_namespace }
           syncPolicy  = local.application_sync_policy
         }
       }

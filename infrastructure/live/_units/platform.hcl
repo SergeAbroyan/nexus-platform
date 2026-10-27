@@ -97,8 +97,10 @@ inputs = {
   }
 
   queue = {
-    url = dependency.data.outputs.queue_url
-    arn = dependency.data.outputs.queue_arn
+    url                        = dependency.data.outputs.queue_url
+    arn                        = dependency.data.outputs.queue_arn
+    receive_wait_time_seconds  = local.environment.data.queue.receive_wait_time_seconds
+    visibility_timeout_seconds = local.environment.data.queue.visibility_timeout_seconds
   }
 
   ecr_registry                      = "${local.account.aws_account_id}.dkr.ecr.${local.region.aws_region}.amazonaws.com"
@@ -107,4 +109,5 @@ inputs = {
   load_balancer_deletion_protection = local.environment.platform.load_balancer_deletion_protection
   argocd                            = local.environment.platform.argocd
   gitops                            = local.environment.platform.gitops
+  tracing_sample_ratio              = local.environment.platform.tracing_sample_ratio
 }

@@ -127,12 +127,25 @@ variable "cache" {
 }
 
 variable "queue" {
-  description = "Job queue used by the API and worker."
+  description = "Job queue used by the API and worker, and the receive timings the worker uses."
   type = object({
-    url = string
-    arn = string
+    url                        = string
+    arn                        = string
+    receive_wait_time_seconds  = number
+    visibility_timeout_seconds = number
   })
   nullable = false
+}
+
+variable "tracing_sample_ratio" {
+  description = "Share of requests traced by the Istio mesh and the API, from 0 to 1."
+  type        = number
+  nullable    = false
+
+  validation {
+    condition     = var.tracing_sample_ratio >= 0 && var.tracing_sample_ratio <= 1
+    error_message = "The tracing sample ratio must be between 0 and 1."
+  }
 }
 
 variable "ecr_registry" {
