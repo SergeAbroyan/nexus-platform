@@ -22,9 +22,6 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  EKS_PUBLIC_ACCESS_CIDR: ${{ vars.EKS_PUBLIC_ACCESS_CIDR }}
-  NEXUS_DNS_ZONE_NAME: ${{ vars.NEXUS_DNS_ZONE_NAME }}
-  NEXUS_INGRESS_HOST: ${{ vars.NEXUS_INGRESS_HOST }}
   TF_IN_AUTOMATION: "true"
 
 jobs:
@@ -54,16 +51,10 @@ jobs:
           tg_version: 1.1.5
           tf_path: terraform
 
-      - name: Allow this runner to reach the EKS API
-        run: echo "CI_RUNNER_PUBLIC_ACCESS_CIDR=$(curl -fsS https://checkip.amazonaws.com)/32" >> "$GITHUB_ENV"
-
-      - name: Check deployment prerequisites
-        run: make preflight
-
       - name: Plan infrastructure
         if: inputs.operation == 'plan'
-        run: terragrunt run --all plan --non-interactive --working-dir infrastructure/live/dev/us-east-1
+        run: terragrunt run --all plan --non-interactive --working-dir infrastructure/live/dev
 
       - name: Apply infrastructure
         if: inputs.operation == 'apply'
-        run: terragrunt run --all apply --non-interactive --working-dir infrastructure/live/dev/us-east-1
+        run: terragrunt run --all apply --non-interactive --working-dir infrastructure/live/dev

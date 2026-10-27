@@ -1,13 +1,22 @@
+terragrunt_version_constraint = ">= 1.1.5, < 2.0.0"
+terraform_version_constraint  = ">= 1.10.0, < 2.0.0"
+
 locals {
-  environment_config = read_terragrunt_config(find_in_parent_folders("environment.hcl"))
+  environment = read_terragrunt_config(find_in_parent_folders("environment.hcl")).locals
+  region      = try(read_terragrunt_config(find_in_parent_folders("region.hcl")).locals, {})
 
-  project_name        = get_env("TG_PROJECT_NAME", "nexus")
-  aws_account_id      = local.environment_config.locals.aws_account_id
-  state_bucket_name   = "${local.project_name}-terraform-state-${local.aws_account_id}"
-  state_bucket_region = get_env("TG_STATE_BUCKET_REGION", "us-east-1")
+  aws_region = lookup(local.region, "aws_region", local.environment.primary_region)
+  name = join("-", compact([
+    local.environment.project_name,
+    local.environment.environment,
+    lookup(local.region, "region_code", ""),
+  ]))
 
-  environment = local.environment_config.locals.environment
-  aws_region  = local.environment_config.locals.aws_region
+  tags = {
+    Environment = local.environment.environment
+    ManagedBy   = "Terraform"
+    Project     = local.environment.project_name
+  }
 }
 
 remote_state {
@@ -19,9 +28,9 @@ remote_state {
   }
 
   config = {
-    bucket       = local.state_bucket_name
+    bucket       = "${local.environment.project_name}-terraform-state-${local.environment.aws_account_id}"
     key          = "${path_relative_to_include()}/terraform.tfstate"
-    region       = local.state_bucket_region
+    region       = "us-east-1"
     encrypt      = true
     use_lockfile = true
 
@@ -36,15 +45,20 @@ generate "aws_provider" {
   contents = <<-EOF
     provider "aws" {
       region              = "${local.aws_region}"
-      allowed_account_ids = ["${local.aws_account_id}"]
+      allowed_account_ids = ["${local.environment.aws_account_id}"]
 
       default_tags {
         tags = {
-          Environment = "${local.environment}"
-          ManagedBy   = "Terraform"
-          Project     = "${local.project_name}"
+          Environment = "${local.tags.Environment}"
+          ManagedBy   = "${local.tags.ManagedBy}"
+          Project     = "${local.tags.Project}"
         }
       }
     }
   EOF
+}
+
+inputs = {
+  name = local.name
+  tags = local.tags
 }

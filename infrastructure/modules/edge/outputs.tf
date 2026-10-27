@@ -1,24 +1,24 @@
-output "enabled" {
-  description = "Whether the CloudFront edge layer is enabled."
-  value       = var.enable_cdn
+output "application_url" {
+  description = "Public HTTPS application URL."
+  value       = "https://${var.hostname}"
+}
+
+output "active_region" {
+  description = "Region that currently receives traffic."
+  value       = var.active_region
 }
 
 output "distribution_id" {
-  description = "CloudFront distribution ID, or null when the CDN is disabled."
-  value       = try(module.cloudfront[0].cloudfront_distribution_id, null)
+  description = "CloudFront distribution ID."
+  value       = module.cloudfront.cloudfront_distribution_id
 }
 
 output "distribution_domain_name" {
-  description = "CloudFront-generated domain name, or null when the CDN is disabled."
-  value       = try(module.cloudfront[0].cloudfront_distribution_domain_name, null)
-}
-
-output "application_url" {
-  description = "Public HTTPS application URL, or null when the CDN is disabled."
-  value       = var.enable_cdn ? "https://${var.hostname}" : null
+  description = "CloudFront-generated domain name."
+  value       = module.cloudfront.cloudfront_distribution_domain_name
 }
 
 output "web_acl_arn" {
-  description = "CloudFront WAF web ACL ARN, or null when WAF is disabled."
-  value       = try(module.waf[0].web_acl_arn, null)
+  description = "CloudFront WAF web ACL ARN."
+  value       = module.waf.web_acl_arn
 }
