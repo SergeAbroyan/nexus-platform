@@ -71,7 +71,7 @@ inputs = {
   karpenter = {
     node_iam_role_name      = dependency.cluster.outputs.karpenter_node_iam_role_name
     interruption_queue_name = dependency.cluster.outputs.karpenter_interruption_queue_name
-    replicas                = local.environment.platform.karpenter_replicas
+    service_account         = dependency.cluster.outputs.karpenter_service_account
   }
 
   kms_key_arns             = dependency.security.outputs.kms_key_arns
@@ -109,5 +109,4 @@ inputs = {
   load_balancer_deletion_protection = local.environment.platform.load_balancer_deletion_protection
   argocd                            = local.environment.platform.argocd
   gitops                            = local.environment.platform.gitops
-  tracing_sample_ratio              = local.environment.platform.tracing_sample_ratio
 }

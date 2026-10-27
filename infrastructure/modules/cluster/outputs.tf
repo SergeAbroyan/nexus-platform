@@ -27,3 +27,11 @@ output "karpenter_interruption_queue_name" {
   description = "SQS queue name passed to the Karpenter Helm chart."
   value       = module.karpenter.queue_name
 }
+
+output "karpenter_service_account" {
+  description = "Namespace and name of the service account bound to the Karpenter controller role."
+  value = {
+    namespace = module.karpenter.namespace
+    name      = module.karpenter.service_account
+  }
+}

@@ -1,3 +1,17 @@
+locals {
+  application_namespace = "nexus"
+  monitoring_namespace  = "monitoring"
+
+  service_accounts = {
+    load_balancer_controller = { namespace = "kube-system", name = "aws-load-balancer-controller" }
+    external_secrets         = { namespace = "external-secrets", name = "external-secrets" }
+    alertmanager             = { namespace = local.monitoring_namespace, name = "alertmanager" }
+    grafana                  = { namespace = local.monitoring_namespace, name = "grafana" }
+    api                      = { namespace = local.application_namespace, name = "api" }
+    worker                   = { namespace = local.application_namespace, name = "worker" }
+  }
+}
+
 module "load_balancer_controller" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
   version = "2.9.0"

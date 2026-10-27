@@ -58,18 +58,16 @@ variable "load_balancer_subnet_ids" {
 }
 
 variable "karpenter" {
-  description = "Karpenter node role, interruption queue, and controller replica count."
+  description = "Karpenter node role, interruption queue, and the service account bound to its controller role."
   type = object({
     node_iam_role_name      = string
     interruption_queue_name = string
-    replicas                = number
+    service_account = object({
+      namespace = string
+      name      = string
+    })
   })
   nullable = false
-
-  validation {
-    condition     = var.karpenter.replicas >= 1 && floor(var.karpenter.replicas) == var.karpenter.replicas
-    error_message = "Karpenter needs at least one whole controller replica."
-  }
 }
 
 variable "kms_key_arns" {
@@ -137,17 +135,6 @@ variable "queue" {
   nullable = false
 }
 
-variable "tracing_sample_ratio" {
-  description = "Share of requests traced by the Istio mesh and the API, from 0 to 1."
-  type        = number
-  nullable    = false
-
-  validation {
-    condition     = var.tracing_sample_ratio >= 0 && var.tracing_sample_ratio <= 1
-    error_message = "The tracing sample ratio must be between 0 and 1."
-  }
-}
-
 variable "ecr_registry" {
   description = "Regional ECR registry hostname that hosts the application images."
   type        = string
@@ -161,7 +148,7 @@ variable "application_hostname" {
 
   validation {
     condition     = can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.application_hostname))
-    error_message = "Set domain_name in infrastructure/live/<environment>/environment.hcl so the application hostname is a valid DNS name."
+    error_message = "Set domain_name in infrastructure/live/account.hcl so the application hostname is a valid DNS name."
   }
 }
 

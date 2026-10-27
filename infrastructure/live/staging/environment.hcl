@@ -99,9 +99,7 @@ locals {
   }
 
   platform = {
-    karpenter_replicas                = 2
     load_balancer_deletion_protection = false
-    tracing_sample_ratio              = 0.01
 
     gitops = {
       repository = "https://github.com/SergeAbroyan/nexus-gitops.git"

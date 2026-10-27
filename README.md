@@ -7,9 +7,10 @@ active-passive pair across one to three Availability Zones. Two settings per
 environment decide what is actually deployed, so the same code serves a small
 DEV and a highly available production.
 
-Application source code lives in `nexus-applications`. Helm charts and
-environment values live in `nexus-gitops`. Terraform owns the AWS resources,
-Argo CD, and the ApplicationSets that deploy those charts.
+Application source code lives in `nexus-applications`. Everything that runs
+inside Kubernetes, including every add-on, lives in `nexus-gitops`. Terraform
+owns the AWS resources, installs Argo CD, and hands each cluster one root
+Application together with the AWS facts that `nexus-gitops` needs.
 
 ## What each environment deploys
 
@@ -250,34 +251,43 @@ region.
 
 ## Kubernetes platform
 
-The platform unit installs Argo CD and then a second Helm release,
-`argocd-gitops`, from the local chart `modules/platform/charts/gitops`. That
-release holds one AppProject and three ApplicationSets. It runs after Argo CD
-because the Argo CD chart installs its CRDs as templates, and after the Pod
-Identity roles so that controllers start with AWS credentials. Every generated
-Application retries a failed sync with backoff, because on a new cluster some
-Applications sync before another one has installed the CRDs they use.
+The platform unit follows the GitOps Bridge pattern. It installs Argo CD and
+then a second Helm release, `argocd-gitops`, from the local chart
+`modules/platform/charts/gitops`. That release holds two objects, both defined
+in `modules/platform/bootstrap.tf`:
+
+- the `bootstrap` AppProject, which may only create Argo CD `Application` and
+  `AppProject` objects in the Argo CD namespace;
+- the `bootstrap` Application, which renders the `bootstrap` chart in
+  `nexus-gitops` and passes the cluster facts as its `cluster` Helm values.
+
+The `bootstrap` chart creates every other Application, so add-on versions and
+settings change through Git, not through Terraform. The release runs after
+Argo CD because the Argo CD chart installs its CRDs as templates, and after the
+Pod Identity roles so that controllers start with AWS credentials. Terraform
+also configures the Argo CD health check for `Application` objects, which lets
+the root Application roll out its children in sync waves: CRDs first, then the
+controllers, then the node pools and storage class, then the workloads.
+
+The cluster facts are everything `nexus-gitops` needs to know about AWS: the
+environment, Region, cluster name, VPC, GitOps repository and revision,
+application hostname, ingress port and target group, ECR registry, EBS key,
+Karpenter node role and interruption queue, the alert topic, the Grafana
+password secret, the PostgreSQL, Valkey, and SQS connection settings, and the
+namespace and name of every service account that a Pod Identity role trusts.
+Terraform owns those service accounts, defined once at the top of
+`modules/platform/identities.tf` and, for Karpenter, in `environment.hcl`; the
+add-ons that use them run in those namespaces. `values.schema.json` in the
+`bootstrap` chart is the contract for the facts, so a missing or mistyped fact
+fails the render. Secrets never pass through Terraform state, Helm values, or
+Git; External Secrets reads them from Secrets Manager with EKS Pod Identity.
 
 Terraform creates each region's internal Network Load Balancer and target
-group in the workload zones. The ingress chart in `nexus-gitops` binds the
-Istio gateway pods to that target group with a `TargetGroupBinding`, so the load
-balancer exists before CloudFront needs it and one apply completes the whole
-environment. Karpenter launches nodes only in the workload zones, because only
-those subnets carry its discovery tag.
-
-Every Application reads its environment's values file from
-`nexus-gitops/environments/<environment>/<chart>-values.yaml`, and Terraform
-adds what comes from AWS or what Terraform names on top: the environment name,
-the regional ECR registry, PostgreSQL, Valkey and SQS endpoints and the
-worker's SQS timings, the database secret and its region, the target group,
-and the Karpenter node role. Names that both repositories use, such as the
-application namespace, service accounts, storage class, ingress gateway, and
-trace collector, are defined once in `modules/platform/names.tf`. The
-`platform.tracing_sample_ratio` setting in `environment.hcl` drives both Istio
-and API trace sampling. The charts mark every injected value as required, so
-none of them is repeated in `nexus-gitops`. Secrets never pass through
-Terraform state, Helm values, or Git; External Secrets reads them from Secrets
-Manager with EKS Pod Identity.
+group in the workload zones. The `ingress-config` chart in `nexus-gitops` binds
+the Istio gateway pods to that target group with a `TargetGroupBinding`, so the
+load balancer exists before CloudFront needs it and one apply completes the
+whole environment. Karpenter launches nodes only in the workload zones, because
+only those subnets carry its discovery tag.
 
 ## Alerts and observability
 
@@ -291,8 +301,9 @@ on the SNS key.
 Argo CD installs Prometheus, Grafana, Loki, Tempo, and OpenTelemetry collectors
 in every cluster. Grafana reads CloudWatch through a read-only Pod Identity
 role, Loki keeps seven days of logs, and Tempo keeps seven days of traces
-sampled at 1%. Loki and Tempo use single-replica local volumes, which suits
-DEV; production should use object storage.
+sampled at 1%, set by `tracing.samplingPercentage` in `nexus-gitops`. Loki and
+Tempo use single-replica local volumes, which suits DEV; production should use
+object storage.
 
 ## Cost
 

@@ -46,7 +46,7 @@ variable "hostname" {
 
   validation {
     condition     = can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.hostname))
-    error_message = "Set domain_name in infrastructure/live/<environment>/environment.hcl so the hostname is a valid DNS name."
+    error_message = "Set domain_name in infrastructure/live/account.hcl so the hostname is a valid DNS name."
   }
 }
 

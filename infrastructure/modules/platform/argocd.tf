@@ -8,8 +8,18 @@ locals {
         "server.insecure" = true
       }
       cm = {
-        "admin.enabled"                      = true
-        "application.resourceTrackingMethod" = "annotation"
+        "admin.enabled"                                          = true
+        "application.resourceTrackingMethod"                     = "annotation"
+        "resource.customizations.health.argoproj.io_Application" = <<-EOT
+          hs = { status = "Progressing", message = "" }
+          if obj.status ~= nil and obj.status.health ~= nil then
+            hs.status = obj.status.health.status
+            if obj.status.health.message ~= nil then
+              hs.message = obj.status.health.message
+            end
+          end
+          return hs
+        EOT
       }
     }
     controller = {
@@ -28,7 +38,7 @@ locals {
       resources = var.argocd.repository_server_resources
     }
     applicationSet = {
-      replicas = 1
+      replicas = 0
     }
     dex = {
       enabled = false
@@ -84,7 +94,7 @@ module "gitops_bootstrap" {
     timeout          = 300
   }
 
-  values = [yamlencode({ objects = local.gitops_objects })]
+  values = [yamlencode({ objects = [local.bootstrap_project, local.bootstrap_application] })]
 
   depends_on = [
     module.argocd,

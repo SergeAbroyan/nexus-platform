@@ -1,5 +1,5 @@
 apiVersion: v2
 name: nexus-argocd-gitops
-description: Argo CD AppProject and ApplicationSets that bootstrap Nexus GitOps
+description: Argo CD project and root Application that bootstrap Nexus GitOps
 type: application
 version: 0.1.0

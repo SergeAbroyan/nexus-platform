@@ -34,7 +34,7 @@ variable "domain_name" {
 
   validation {
     condition     = can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.domain_name))
-    error_message = "Set domain_name in infrastructure/live/<environment>/environment.hcl to a lowercase domain that you own."
+    error_message = "Set domain_name in infrastructure/live/account.hcl to a lowercase domain that you own."
   }
 }
 
