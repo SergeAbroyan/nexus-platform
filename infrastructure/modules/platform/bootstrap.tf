@@ -4,8 +4,12 @@ locals {
     name        = var.cluster_name
     region      = var.region
     vpcId       = var.vpc_id
-    gitops      = var.gitops
     hostname    = var.application_hostname
+
+    gitops = {
+      repository = var.gitops.repository
+      revision   = var.gitops.revision
+    }
 
     ingress = {
       port           = var.ingress_port

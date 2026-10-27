@@ -21,6 +21,13 @@ locals {
           return hs
         EOT
       }
+      repositories = {
+        gitops = {
+          name = "gitops"
+          type = "git"
+          url  = var.gitops.repository
+        }
+      }
     }
     controller = {
       replicas  = 1
@@ -49,55 +56,49 @@ locals {
   }
 }
 
-module "argocd" {
-  source  = "terraform-module/release/helm"
-  version = "2.9.1"
-
-  namespace  = var.argocd.namespace
-  repository = var.argocd.chart_repository
-
-  app = {
-    name             = "argocd"
-    chart            = "argo-cd"
-    version          = var.argocd.chart_version
-    deploy           = true
-    create_namespace = true
-    atomic           = true
-    cleanup_on_fail  = true
-    wait             = true
-    recreate_pods    = false
-    lint             = false
-    timeout          = 900
-  }
-
-  values = [yamlencode(local.values)]
+ephemeral "aws_secretsmanager_secret_version" "gitops_deploy_key" {
+  secret_id = var.gitops.deploy_key_secret_name
 }
 
-module "gitops_bootstrap" {
-  source  = "terraform-module/release/helm"
-  version = "2.9.1"
+resource "helm_release" "argocd" {
+  name             = "argocd"
+  namespace        = var.argocd.namespace
+  create_namespace = true
+  repository       = var.argocd.chart_repository
+  chart            = "argo-cd"
+  version          = var.argocd.chart_version
 
-  namespace  = var.argocd.namespace
-  repository = null
+  atomic          = true
+  cleanup_on_fail = true
+  wait            = true
+  timeout         = 900
+  max_history     = 10
 
-  app = {
-    name             = "argocd-gitops"
-    chart            = "${path.module}/charts/gitops"
-    version          = "0.1.0"
-    deploy           = true
-    create_namespace = false
-    atomic           = true
-    cleanup_on_fail  = true
-    wait             = true
-    recreate_pods    = false
-    lint             = false
-    timeout          = 300
-  }
+  values = [yamlencode(local.values)]
+
+  set_wo = [{
+    name  = "configs.repositories.gitops.sshPrivateKey"
+    type  = "string"
+    value = ephemeral.aws_secretsmanager_secret_version.gitops_deploy_key.secret_string
+  }]
+  set_wo_revision = var.gitops.deploy_key_revision
+}
+
+resource "helm_release" "gitops_bootstrap" {
+  name      = "argocd-gitops"
+  namespace = var.argocd.namespace
+  chart     = "${path.module}/charts/gitops"
+
+  atomic          = true
+  cleanup_on_fail = true
+  wait            = true
+  timeout         = 300
+  max_history     = 10
 
   values = [yamlencode({ objects = [local.bootstrap_project, local.bootstrap_application] })]
 
   depends_on = [
-    module.argocd,
+    helm_release.argocd,
     module.alertmanager,
     module.api,
     module.external_secrets,

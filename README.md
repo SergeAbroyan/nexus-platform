@@ -125,7 +125,7 @@ Independent units run in parallel, and destroy uses the reverse order.
 
 ## Prerequisites
 
-- Terraform 1.10 or later (CI uses 1.16.6) and Terragrunt 1.1.5 or later;
+- Terraform 1.11 or later (CI uses 1.16.6) and Terragrunt 1.1.5 or later;
   `root.hcl` refuses older versions
 - AWS CLI, `curl`, and `kubectl` 1.34 to 1.36 for EKS 1.35
 - Credentials for the `aws_account_id` in `account.hcl`; the AWS provider
@@ -174,6 +174,23 @@ Route 53, AWS created its own hosted zone for it; point the domain at the name
 servers above and delete that extra zone. Wait until `dig NS <domain>` returns
 the new name servers, because the CloudFront certificate is validated through
 this zone.
+
+Give Argo CD read access to `nexus-gitops`. Create a key pair, store the
+private key in the secret that `global` created, and delete the local copy:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C argocd-nexus-gitops -f argocd-gitops
+aws secretsmanager put-secret-value --region us-east-1 \
+  --secret-id nexus/argocd/gitops-deploy-key \
+  --secret-string file://argocd-gitops
+rm argocd-gitops
+```
+
+In GitHub, open `nexus-gitops` → Settings → Deploy keys → Add deploy key, paste
+the contents of `argocd-gitops.pub`, leave **Allow write access** off, and then
+delete `argocd-gitops.pub`. To replace the key later, store the new private
+key, add its public key in GitHub, and increase
+`platform.gitops.deploy_key_revision` in each `environment.hcl`.
 
 Deploy an environment:
 
@@ -279,8 +296,15 @@ Terraform owns those service accounts, defined once at the top of
 `modules/platform/identities.tf` and, for Karpenter, in `environment.hcl`; the
 add-ons that use them run in those namespaces. `values.schema.json` in the
 `bootstrap` chart is the contract for the facts, so a missing or mistyped fact
-fails the render. Secrets never pass through Terraform state, Helm values, or
+fails the render. Application secrets never pass through Terraform state or
 Git; External Secrets reads them from Secrets Manager with EKS Pod Identity.
+
+`nexus-gitops` is private, so Argo CD reads it over SSH with a read-only GitHub
+deploy key. The key lives in the Secrets Manager secret
+`nexus/argocd/gitops-deploy-key`, which `global` creates and replicates to the
+standby region. The platform unit reads it as an ephemeral value and hands it to
+the Argo CD release as a write-only Helm value, so it is never written to
+Terraform state or Git.
 
 Terraform creates each region's internal Network Load Balancer and target
 group in the workload zones. The `ingress-config` chart in `nexus-gitops` binds

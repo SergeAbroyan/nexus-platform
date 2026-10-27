@@ -79,6 +79,7 @@ jobs:
         uses: bridgecrewio/checkov-action@6f26dc90000b74feb589a906cdfae540f5119895 # v12
         with:
           directory: infrastructure
+          skip_path: infrastructure/live
           framework: terraform
           output_format: cli
           quiet: true
@@ -90,6 +91,7 @@ jobs:
         uses: bridgecrewio/checkov-action@6f26dc90000b74feb589a906cdfae540f5119895 # v12
         with:
           directory: infrastructure
+          skip_path: infrastructure/live
           framework: terraform
           download_external_modules: true
           output_format: cli

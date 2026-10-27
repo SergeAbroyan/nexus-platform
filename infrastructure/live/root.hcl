@@ -1,5 +1,5 @@
 terragrunt_version_constraint = ">= 1.1.5, < 2.0.0"
-terraform_version_constraint  = ">= 1.10.0, < 2.0.0"
+terraform_version_constraint  = ">= 1.11.0, < 2.0.0"
 
 locals {
   account     = read_terragrunt_config(find_in_parent_folders("account.hcl")).locals

@@ -11,3 +11,16 @@ updates:
       actions:
         patterns:
           - "*"
+
+  - package-ecosystem: terraform
+    directories:
+      - /infrastructure/bootstrap
+      - /infrastructure/modules/*
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      terraform:
+        patterns:
+          - "*"

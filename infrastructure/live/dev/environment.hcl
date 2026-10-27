@@ -102,8 +102,8 @@ locals {
     load_balancer_deletion_protection = false
 
     gitops = {
-      repository = "https://github.com/SergeAbroyan/nexus-gitops.git"
-      revision   = "main"
+      revision            = "main"
+      deploy_key_revision = 1
     }
 
     argocd = {

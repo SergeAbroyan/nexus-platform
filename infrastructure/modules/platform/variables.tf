@@ -195,15 +195,22 @@ variable "argocd" {
 }
 
 variable "gitops" {
-  description = "Git repository and revision reconciled by Argo CD."
+  description = "GitOps repository and revision that Argo CD reconciles, and the Secrets Manager secret with its read-only deploy key."
   type = object({
-    repository = string
-    revision   = string
+    repository             = string
+    revision               = string
+    deploy_key_secret_name = string
+    deploy_key_revision    = number
   })
   nullable = false
 
   validation {
-    condition     = can(regex("^https://", var.gitops.repository)) && length(trimspace(var.gitops.revision)) > 0
-    error_message = "The GitOps repository must use HTTPS and the revision cannot be empty."
+    condition     = can(regex("^git@", var.gitops.repository)) && length(trimspace(var.gitops.revision)) > 0
+    error_message = "The GitOps repository must be an SSH URL such as git@github.com:owner/repository.git, and the revision cannot be empty."
+  }
+
+  validation {
+    condition     = var.gitops.deploy_key_revision >= 1 && floor(var.gitops.deploy_key_revision) == var.gitops.deploy_key_revision
+    error_message = "Increase deploy_key_revision by one, starting at 1, each time the deploy key changes."
   }
 }

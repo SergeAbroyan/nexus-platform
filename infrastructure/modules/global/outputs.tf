@@ -27,3 +27,8 @@ output "standby_repository_urls" {
   description = "Standby-region ECR repository URLs that receive replicated images."
   value       = { for name, repository in module.standby_repository : name => repository.repository_url }
 }
+
+output "gitops_deploy_key_secret_name" {
+  description = "Secrets Manager secret, replicated to the standby region, that holds the read-only SSH key Argo CD uses for the GitOps repository."
+  value       = module.gitops_deploy_key.secret_name
+}

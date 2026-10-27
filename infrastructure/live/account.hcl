@@ -14,6 +14,7 @@ locals {
     owner                     = "SergeAbroyan"
     infrastructure_repository = "nexus-platform"
     applications_repository   = "nexus-applications"
+    gitops_repository         = "nexus-gitops"
     deployment_branch         = "main"
   }
 

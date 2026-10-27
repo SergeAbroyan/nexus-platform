@@ -8,6 +8,10 @@ terraform {
   source = "${get_repo_root()}/infrastructure/modules/platform"
 }
 
+dependency "global" {
+  config_path = "../../../global"
+}
+
 dependency "network" {
   config_path = "../network"
 }
@@ -108,5 +112,11 @@ inputs = {
   ingress_port                      = local.environment.ingress_port
   load_balancer_deletion_protection = local.environment.platform.load_balancer_deletion_protection
   argocd                            = local.environment.platform.argocd
-  gitops                            = local.environment.platform.gitops
+
+  gitops = {
+    repository             = "git@github.com:${local.account.github.owner}/${local.account.github.gitops_repository}.git"
+    revision               = local.environment.platform.gitops.revision
+    deploy_key_secret_name = dependency.global.outputs.gitops_deploy_key_secret_name
+    deploy_key_revision    = local.environment.platform.gitops.deploy_key_revision
+  }
 }
