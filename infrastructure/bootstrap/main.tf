@@ -2,7 +2,7 @@ data "aws_caller_identity" "current" {}
 
 module "terraform_state" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "5.15.4"
+  version = "5.17.0"
 
   bucket        = "${var.project_name}-terraform-state-${data.aws_caller_identity.current.account_id}"
   force_destroy = false

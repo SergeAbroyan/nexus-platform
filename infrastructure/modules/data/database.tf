@@ -31,7 +31,7 @@ module "database_security_group" {
 
 module "database" {
   source  = "terraform-aws-modules/rds/aws"
-  version = "7.2.0"
+  version = "7.2.2"
 
   identifier = local.database_identifier
 

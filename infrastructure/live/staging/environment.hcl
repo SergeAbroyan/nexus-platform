@@ -32,7 +32,7 @@ locals {
   }
 
   cluster = {
-    kubernetes_version               = "1.35"
+    kubernetes_version               = "1.36"
     admin_user_names                 = ["your-iam-user"]
     public_access_cidrs              = []
     deletion_protection              = false
@@ -58,7 +58,7 @@ locals {
     database = {
       name                  = "nexus"
       master_username       = "nexus_admin"
-      engine_version        = "17"
+      engine_version        = "18"
       instance_class        = "db.t4g.small"
       allocated_storage     = 20
       max_allocated_storage = 200
@@ -70,7 +70,7 @@ locals {
     }
 
     cache = {
-      engine_version          = "8.1"
+      engine_version          = "9.1"
       node_type               = "cache.t4g.small"
       num_cache_clusters      = 2
       multi_az                = true
@@ -109,7 +109,7 @@ locals {
     argocd = {
       namespace        = "argocd"
       chart_repository = "https://argoproj.github.io/argo-helm"
-      chart_version    = "10.9.6"
+      chart_version    = "10.11.6"
 
       controller_resources = {
         requests = { cpu = "200m", memory = "512Mi" }

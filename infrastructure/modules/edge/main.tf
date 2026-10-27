@@ -91,7 +91,7 @@ module "waf" {
 
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
-  version = "6.7.0"
+  version = "6.7.1"
 
   aliases             = [var.hostname]
   comment             = "${var.name} application edge"

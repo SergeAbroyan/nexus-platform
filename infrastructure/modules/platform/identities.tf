@@ -14,7 +14,7 @@ locals {
 
 module "load_balancer_controller" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.9.0"
+  version = "2.10.0"
 
   name            = "${var.name}-aws-load-balancer-controller"
   use_name_prefix = false
@@ -36,7 +36,7 @@ module "load_balancer_controller" {
 
 module "external_secrets" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.9.0"
+  version = "2.10.0"
 
   name            = "${var.name}-external-secrets"
   use_name_prefix = false
@@ -75,7 +75,7 @@ module "external_secrets" {
 
 module "alertmanager" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.9.0"
+  version = "2.10.0"
 
   name            = "${var.name}-alertmanager"
   use_name_prefix = false
@@ -109,7 +109,7 @@ module "alertmanager" {
 
 module "grafana" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.9.0"
+  version = "2.10.0"
 
   name            = "${var.name}-grafana"
   use_name_prefix = false
@@ -167,7 +167,7 @@ module "grafana" {
 
 module "api" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.9.0"
+  version = "2.10.0"
 
   name            = "${var.name}-api"
   use_name_prefix = false
@@ -206,7 +206,7 @@ module "api" {
 
 module "worker" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.9.0"
+  version = "2.10.0"
 
   name            = "${var.name}-worker"
   use_name_prefix = false

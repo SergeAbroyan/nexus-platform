@@ -35,7 +35,7 @@ module "kms" {
 
 module "grafana_admin" {
   source  = "terraform-aws-modules/secrets-manager/aws"
-  version = "2.0.0"
+  version = "2.2.0"
 
   name                    = "${var.name}/grafana/admin-password"
   description             = "Grafana administrator password for ${var.name}"
@@ -51,7 +51,7 @@ module "grafana_admin" {
 
 module "alerts" {
   source  = "terraform-aws-modules/sns/aws"
-  version = "7.1.1"
+  version = "7.2.0"
 
   name              = "${var.name}-alerts"
   display_name      = "${var.name} alerts"

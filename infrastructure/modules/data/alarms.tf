@@ -1,6 +1,6 @@
 module "rds_cpu_alarm" {
   source  = "terraform-aws-modules/cloudwatch/aws//modules/metric-alarm"
-  version = "5.7.2"
+  version = "5.7.3"
 
   alarm_name          = "${var.name}-rds-high-cpu"
   alarm_description   = "RDS CPU utilization is above the configured threshold."
@@ -22,7 +22,7 @@ module "rds_cpu_alarm" {
 
 module "rds_free_storage_alarm" {
   source  = "terraform-aws-modules/cloudwatch/aws//modules/metric-alarm"
-  version = "5.7.2"
+  version = "5.7.3"
 
   alarm_name          = "${var.name}-rds-low-free-storage"
   alarm_description   = "RDS free storage is below the configured threshold."
@@ -46,7 +46,7 @@ module "valkey_memory_alarm" {
   for_each = toset([for index in range(var.cache.num_cache_clusters) : format("%s-%03d", local.cache_name, index + 1)])
 
   source  = "terraform-aws-modules/cloudwatch/aws//modules/metric-alarm"
-  version = "5.7.2"
+  version = "5.7.3"
 
   alarm_name          = "${var.name}-${each.value}-high-memory"
   alarm_description   = "Valkey database memory usage is above the configured threshold."
@@ -68,7 +68,7 @@ module "valkey_memory_alarm" {
 
 module "sqs_oldest_message_alarm" {
   source  = "terraform-aws-modules/cloudwatch/aws//modules/metric-alarm"
-  version = "5.7.2"
+  version = "5.7.3"
 
   alarm_name          = "${var.name}-sqs-oldest-message"
   alarm_description   = "The oldest unprocessed Nexus job is above the configured age."
@@ -90,7 +90,7 @@ module "sqs_oldest_message_alarm" {
 
 module "sqs_dead_letter_alarm" {
   source  = "terraform-aws-modules/cloudwatch/aws//modules/metric-alarm"
-  version = "5.7.2"
+  version = "5.7.3"
 
   alarm_name          = "${var.name}-sqs-dead-letter-messages"
   alarm_description   = "The Nexus dead-letter queue contains one or more failed jobs."

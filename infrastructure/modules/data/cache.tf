@@ -6,7 +6,7 @@ locals {
 
 module "cache_users" {
   source  = "terraform-aws-modules/elasticache/aws//modules/user-group"
-  version = "1.11.1"
+  version = "1.11.2"
 
   engine        = "valkey"
   user_group_id = "${local.cache_name}-users"
@@ -33,7 +33,7 @@ module "cache_users" {
 
 module "cache" {
   source  = "terraform-aws-modules/elasticache/aws"
-  version = "1.11.1"
+  version = "1.11.2"
 
   replication_group_id = local.cache_name
   description          = "Nexus application cache for ${var.name}"

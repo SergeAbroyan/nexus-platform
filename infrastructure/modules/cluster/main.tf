@@ -2,7 +2,7 @@ data "aws_partition" "current" {}
 
 module "ebs_csi_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "2.9.0"
+  version = "2.10.0"
 
   name = "${var.name}-ebs-csi"
 
@@ -16,7 +16,7 @@ module "ebs_csi_pod_identity" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "21.25.0"
+  version = "21.29.0"
 
   name               = var.name
   kubernetes_version = var.kubernetes_version

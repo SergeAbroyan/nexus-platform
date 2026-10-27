@@ -125,9 +125,9 @@ Independent units run in parallel, and destroy uses the reverse order.
 
 ## Prerequisites
 
-- Terraform 1.11 or later (CI uses 1.16.6) and Terragrunt 1.1.5 or later;
+- Terraform 1.11 or later (CI uses 1.17.0) and Terragrunt 1.1.5 or later (CI uses 1.2.1);
   `root.hcl` refuses older versions
-- AWS CLI, `curl`, and `kubectl` 1.34 to 1.36 for EKS 1.35
+- AWS CLI, `curl`, and `kubectl` 1.35 to 1.37 for EKS 1.36
 - Credentials for the `aws_account_id` in `account.hcl`; the AWS provider
   refuses to run against any other account
 - A domain that you own

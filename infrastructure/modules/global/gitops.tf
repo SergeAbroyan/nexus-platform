@@ -1,6 +1,6 @@
 module "gitops_deploy_key" {
   source  = "terraform-aws-modules/secrets-manager/aws"
-  version = "2.0.0"
+  version = "2.2.0"
 
   name                    = "${var.name}/argocd/gitops-deploy-key"
   description             = "Read-only SSH deploy key that Argo CD uses to fetch ${var.github.owner}/${var.github.gitops_repository}"
