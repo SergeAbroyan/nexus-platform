@@ -803,9 +803,10 @@ locals {
 
   local_applications = [
     {
-      name      = "karpenter-config"
-      namespace = "kube-system"
-      path      = "charts/platform/karpenter"
+      name       = "karpenter-config"
+      namespace  = "kube-system"
+      path       = "charts/platform/karpenter"
+      valuesFile = "karpenter-values.yaml"
       values = yamlencode({
         clusterName  = var.cluster_name
         nodeRoleName = var.karpenter.node_iam_role_name
@@ -813,21 +814,24 @@ locals {
       })
     },
     {
-      name      = "storage-config"
-      namespace = "kube-system"
-      path      = "charts/platform/storage"
-      values    = yamlencode({ kmsKeyArn = var.kms_key_arns["ebs"] })
+      name       = "storage-config"
+      namespace  = "kube-system"
+      path       = "charts/platform/storage"
+      valuesFile = "storage-values.yaml"
+      values     = yamlencode({ kmsKeyArn = var.kms_key_arns["ebs"] })
     },
     {
-      name      = "cloudbeaver"
-      namespace = "cloudbeaver"
-      path      = "charts/platform/cloudbeaver"
-      values    = "{}"
+      name       = "cloudbeaver"
+      namespace  = "cloudbeaver"
+      path       = "charts/platform/cloudbeaver"
+      valuesFile = "cloudbeaver-values.yaml"
+      values     = "{}"
     },
     {
-      name      = "ingress-config"
-      namespace = "istio-ingress"
-      path      = "charts/platform/ingress"
+      name       = "ingress-config"
+      namespace  = "istio-ingress"
+      path       = "charts/platform/ingress"
+      valuesFile = "ingress-values.yaml"
       values = yamlencode({
         host           = var.application_hostname
         targetGroupArn = module.ingress_load_balancer.target_groups["gateway"].arn
@@ -964,15 +968,21 @@ locals {
         }
         spec = {
           project = "nexus-platform"
-          source = {
-            repoURL        = var.gitops.repository
-            targetRevision = var.gitops.revision
-            path           = local.application_path_template
-            helm = {
-              releaseName = local.application_name_template
-              values      = local.application_values_template
-            }
-          }
+          sources = [
+            {
+              repoURL        = var.gitops.repository
+              targetRevision = var.gitops.revision
+              path           = local.application_path_template
+              helm = {
+                releaseName = local.application_name_template
+                valueFiles  = ["$values/environments/${var.environment}/${local.application_values_file_template}"]
+                values      = local.application_values_template
+              }
+            },
+            {
+              repoURL = var.gitops.repository, targetRevision = var.gitops.revision, ref = "values"
+            },
+          ]
           destination = {
             server    = "https://kubernetes.default.svc"
             namespace = local.application_namespace_template

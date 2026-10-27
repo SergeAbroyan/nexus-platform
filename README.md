@@ -265,11 +265,13 @@ balancer exists before CloudFront needs it and one apply completes the whole
 environment. Karpenter launches nodes only in the workload zones, because only
 those subnets carry its discovery tag.
 
-Terraform injects region-specific values into the ApplicationSets: the
-regional ECR registry, PostgreSQL, Valkey and SQS endpoints, the database
-secret and its region, the target group, and the Karpenter node role. Secrets
-never pass through Terraform state, Helm values, or Git; External Secrets reads
-them from Secrets Manager with EKS Pod Identity.
+Every Application reads its environment's values file from
+`nexus-gitops/environments/<environment>/<chart>-values.yaml`, and Terraform
+adds the region-specific values on top: the regional ECR registry, PostgreSQL,
+Valkey and SQS endpoints, the database secret and its region, the target
+group, and the Karpenter node role. Secrets never pass through Terraform
+state, Helm values, or Git; External Secrets reads them from Secrets Manager
+with EKS Pod Identity.
 
 ## Alerts and observability
 
@@ -318,9 +320,14 @@ terragrunt run --all destroy
 
 Destroy an environment's standby region before setting
 `standby_enabled = false`, because a disabled region refuses `plan` and
-`apply`. Volumes created by persistent volume claims use the `Retain` policy;
-delete them in the EC2 console when the data is no longer needed. Keep
-`global` while any environment exists.
+`apply`. Keep `global` while any environment exists.
+
+Destroying a cluster does not delete its persistent volume claims, so the EBS
+volumes behind them remain. In DEV the `nexus-gp3` StorageClass deletes a
+volume when its claim is deleted; in staging and production volumes are
+retained even then. After a teardown, delete leftover volumes in the EC2
+console; each is tagged with the claim it served, in
+`kubernetes.io/created-for/pvc/name`.
 
 ## Continuous validation and deployment
 
