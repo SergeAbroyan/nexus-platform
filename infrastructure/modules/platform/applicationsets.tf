@@ -839,7 +839,7 @@ locals {
   nexus_applications = [
     {
       name       = "nexus-runtime"
-      path       = "charts/applications/nexus-runtime"
+      path       = "charts/applications/runtime"
       valuesFile = "runtime-values.yaml"
       values     = "{}"
     },
