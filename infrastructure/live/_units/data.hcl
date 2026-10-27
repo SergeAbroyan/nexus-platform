@@ -1,7 +1,8 @@
 locals {
+  account     = read_terragrunt_config(find_in_parent_folders("account.hcl")).locals
   environment = read_terragrunt_config(find_in_parent_folders("environment.hcl")).locals
   region      = read_terragrunt_config(find_in_parent_folders("region.hcl")).locals
-  standby     = local.region.aws_region != local.environment.primary_region
+  standby     = local.region.aws_region != local.account.primary_region
 }
 
 terraform {
@@ -21,13 +22,14 @@ dependency "cluster" {
 }
 
 dependency "primary" {
-  config_path = "../../${local.environment.primary_region}/data"
+  config_path = "../../${local.account.primary_region}/data"
   enabled     = local.standby
 }
 
 inputs = {
   vpc_id                   = dependency.network.outputs.vpc_id
   data_subnet_ids          = dependency.network.outputs.data_subnet_ids
+  availability_zones       = dependency.network.outputs.workload_availability_zones
   client_security_group_id = dependency.cluster.outputs.node_security_group_id
   kms_key_arns             = dependency.security.outputs.kms_key_arns
   alert_topic_arn          = dependency.security.outputs.alert_topic_arn

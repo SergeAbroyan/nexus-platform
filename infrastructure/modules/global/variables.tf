@@ -1,5 +1,5 @@
 variable "name" {
-  description = "Environment-wide resource name prefix, such as nexus-dev."
+  description = "Account-wide resource name prefix, such as nexus."
   type        = string
   nullable    = false
 
@@ -45,14 +45,24 @@ variable "dns_force_destroy" {
   nullable    = false
 }
 
+variable "environments" {
+  description = "Environments that receive an infrastructure CI role, each trusted only from the GitHub environment of the same name."
+  type        = set(string)
+  nullable    = false
+
+  validation {
+    condition     = length(var.environments) > 0 && alltrue([for environment in var.environments : can(regex("^[a-z][a-z0-9-]*$", environment))])
+    error_message = "List at least one environment using lowercase letters, numbers, or hyphens."
+  }
+}
+
 variable "github" {
-  description = "GitHub repositories and refs trusted by the CI roles."
+  description = "GitHub repositories and the branch trusted by the CI roles."
   type = object({
-    owner                      = string
-    infrastructure_repository  = string
-    applications_repository    = string
-    deployment_branch          = string
-    infrastructure_environment = string
+    owner                     = string
+    infrastructure_repository = string
+    applications_repository   = string
+    deployment_branch         = string
   })
   nullable = false
 
@@ -60,7 +70,7 @@ variable "github" {
     condition = alltrue([
       for value in values(var.github) : can(regex("^[A-Za-z0-9_.-]+$", value))
     ])
-    error_message = "GitHub owner, repositories, branch, and environment may contain only letters, numbers, dots, underscores, or hyphens."
+    error_message = "GitHub owner, repositories, and branch may contain only letters, numbers, dots, underscores, or hyphens."
   }
 }
 

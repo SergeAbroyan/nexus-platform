@@ -1,3 +1,7 @@
+locals {
+  workload_availability_zones = slice(var.vpc.availability_zones, 0, var.availability_zone_count)
+}
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "6.7.2"
@@ -41,7 +45,12 @@ module "vpc" {
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = "1"
-    "karpenter.sh/discovery"          = var.name
+  }
+
+  private_subnet_tags_per_az = {
+    for zone in local.workload_availability_zones : zone => {
+      "karpenter.sh/discovery" = var.name
+    }
   }
 
   tags = var.tags

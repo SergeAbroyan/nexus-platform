@@ -1,4 +1,5 @@
 locals {
+  account       = read_terragrunt_config(find_in_parent_folders("account.hcl")).locals
   environment   = read_terragrunt_config(find_in_parent_folders("environment.hcl")).locals
   cluster       = local.environment.cluster
   operator_cidr = "${trimspace(run_cmd("--terragrunt-quiet", "curl", "-fsS", "https://checkip.amazonaws.com"))}/32"
@@ -9,7 +10,7 @@ terraform {
 }
 
 dependency "global" {
-  config_path = "../../global"
+  config_path = "../../../global"
 }
 
 dependency "network" {
@@ -26,13 +27,14 @@ inputs = {
   vpc_id             = dependency.network.outputs.vpc_id
   vpc_cidr_block     = dependency.network.outputs.vpc_cidr_block
   private_subnet_ids = dependency.network.outputs.private_subnet_ids
+  node_subnet_ids    = dependency.network.outputs.workload_subnet_ids
 
   cluster_encryption_key_arn = dependency.security.outputs.kms_key_arns["eks"]
   ebs_encryption_key_arn     = dependency.security.outputs.kms_key_arns["ebs"]
 
   admin_principal_arns = concat(
-    [for user_name in local.cluster.admin_user_names : "arn:aws:iam::${local.environment.aws_account_id}:user/${user_name}"],
-    [dependency.global.outputs.infrastructure_ci_role_arn],
+    [for user_name in local.cluster.admin_user_names : "arn:aws:iam::${local.account.aws_account_id}:user/${user_name}"],
+    [dependency.global.outputs.infrastructure_ci_role_arns[local.environment.environment]],
   )
   endpoint_public_access_cidrs = distinct(concat(local.cluster.public_access_cidrs, [local.operator_cidr]))
 

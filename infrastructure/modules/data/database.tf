@@ -56,6 +56,7 @@ module "database" {
   kms_key_id            = var.kms_key_arns["rds"]
 
   multi_az               = var.database.multi_az
+  availability_zone      = var.database.multi_az ? null : var.availability_zones[0]
   publicly_accessible    = false
   vpc_security_group_ids = [module.database_security_group.id]
 

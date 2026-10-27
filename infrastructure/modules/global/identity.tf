@@ -54,16 +54,18 @@ module "application_ci" {
 }
 
 module "infrastructure_ci" {
+  for_each = var.environments
+
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "6.8.2"
 
-  name            = "${var.name}-infrastructure-ci"
+  name            = "${var.name}-${each.key}-infrastructure-ci"
   use_name_prefix = false
-  description     = "GitHub Actions role for deploying Nexus AWS infrastructure"
+  description     = "GitHub Actions role for deploying the Nexus ${each.key} infrastructure"
 
   enable_github_oidc = true
   oidc_subjects = [
-    "${var.github.owner}/${var.github.infrastructure_repository}:environment:${var.github.infrastructure_environment}",
+    "${var.github.owner}/${var.github.infrastructure_repository}:environment:${each.key}",
   ]
 
   create_inline_policy = true

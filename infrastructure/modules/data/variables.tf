@@ -33,6 +33,17 @@ variable "data_subnet_ids" {
   }
 }
 
+variable "availability_zones" {
+  description = "Workload Availability Zones in order; a single-AZ database and the cache nodes are placed in them."
+  type        = list(string)
+  nullable    = false
+
+  validation {
+    condition     = length(var.availability_zones) >= 1
+    error_message = "At least one Availability Zone is required."
+  }
+}
+
 variable "client_security_group_id" {
   description = "Security group of the EKS nodes that may connect to PostgreSQL and Valkey."
   type        = string
@@ -105,7 +116,7 @@ variable "promote_replica" {
 }
 
 variable "cache" {
-  description = "Valkey settings."
+  description = "Valkey settings; Multi-AZ needs at least two workload Availability Zones."
   type = object({
     engine_version          = string
     node_type               = string
@@ -121,12 +132,12 @@ variable "cache" {
     condition = (
       can(regex("^[0-9]+\\.[0-9]+$", var.cache.engine_version)) &&
       var.cache.num_cache_clusters >= 1 &&
-      (!var.cache.multi_az || var.cache.num_cache_clusters >= 2) &&
+      (!var.cache.multi_az || (var.cache.num_cache_clusters >= 2 && length(var.availability_zones) >= 2)) &&
       var.cache.snapshot_retention_days >= 0 &&
       var.cache.snapshot_retention_days <= 35 &&
       var.cache.log_retention_days >= 1
     )
-    error_message = "Use a major.minor engine version, at least two nodes for Multi-AZ, 0 to 35 snapshot days, and at least one log retention day."
+    error_message = "Use a major.minor engine version, at least two nodes and two workload Availability Zones for Multi-AZ, 0 to 35 snapshot days, and at least one log retention day."
   }
 }
 

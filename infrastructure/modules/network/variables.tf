@@ -1,5 +1,5 @@
 variable "name" {
-  description = "Regional resource name prefix, such as nexus-dev-use1. Karpenter discovers subnets by this name."
+  description = "Regional resource name prefix, such as nexus-dev-use1. Karpenter discovers the workload subnets by this name."
   type        = string
   nullable    = false
 
@@ -37,6 +37,21 @@ variable "vpc" {
       ])
     )
     error_message = "Provide a valid VPC CIDR, at least two Availability Zones, and one valid public, private, and data subnet CIDR per zone."
+  }
+}
+
+variable "availability_zone_count" {
+  description = "Number of Availability Zones, taken in order from vpc.availability_zones, that run nodes, NAT gateways, and data services. Subnets exist in every listed zone because EKS and RDS require at least two."
+  type        = number
+  nullable    = false
+
+  validation {
+    condition = (
+      var.availability_zone_count >= 1 &&
+      var.availability_zone_count <= length(var.vpc.availability_zones) &&
+      floor(var.availability_zone_count) == var.availability_zone_count
+    )
+    error_message = "The Availability Zone count must be a whole number between 1 and the number of zones in vpc.availability_zones."
   }
 }
 

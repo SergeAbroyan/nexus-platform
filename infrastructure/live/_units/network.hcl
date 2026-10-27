@@ -8,7 +8,8 @@ terraform {
 }
 
 inputs = {
-  vpc              = local.region.vpc
-  nat_gateway_mode = local.environment.network.nat_gateway_mode
-  flow_logs        = local.environment.network.flow_logs
+  vpc                     = local.region.vpc
+  availability_zone_count = local.environment.availability_zone_count
+  nat_gateway_mode        = local.environment.network.nat_gateway_mode
+  flow_logs               = local.environment.network.flow_logs
 }

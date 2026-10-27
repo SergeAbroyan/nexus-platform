@@ -1,4 +1,5 @@
 locals {
+  account     = read_terragrunt_config(find_in_parent_folders("account.hcl")).locals
   environment = read_terragrunt_config(find_in_parent_folders("environment.hcl")).locals
   region      = read_terragrunt_config(find_in_parent_folders("region.hcl")).locals
 }
@@ -63,9 +64,9 @@ inputs = {
   cluster_endpoint                   = dependency.cluster.outputs.cluster_endpoint
   cluster_certificate_authority_data = dependency.cluster.outputs.cluster_certificate_authority_data
 
-  vpc_id             = dependency.network.outputs.vpc_id
-  vpc_cidr_block     = dependency.network.outputs.vpc_cidr_block
-  private_subnet_ids = dependency.network.outputs.private_subnet_ids
+  vpc_id                   = dependency.network.outputs.vpc_id
+  vpc_cidr_block           = dependency.network.outputs.vpc_cidr_block
+  load_balancer_subnet_ids = dependency.network.outputs.workload_subnet_ids
 
   karpenter = {
     node_iam_role_name      = dependency.cluster.outputs.karpenter_node_iam_role_name
@@ -100,8 +101,8 @@ inputs = {
     arn = dependency.data.outputs.queue_arn
   }
 
-  ecr_registry                      = "${local.environment.aws_account_id}.dkr.ecr.${local.region.aws_region}.amazonaws.com"
-  application_hostname              = "${local.environment.application_subdomain}.${local.environment.domain_name}"
+  ecr_registry                      = "${local.account.aws_account_id}.dkr.ecr.${local.region.aws_region}.amazonaws.com"
+  application_hostname              = "${local.environment.application_subdomain}.${local.account.domain_name}"
   ingress_port                      = local.environment.ingress_port
   load_balancer_deletion_protection = local.environment.platform.load_balancer_deletion_protection
   argocd                            = local.environment.platform.argocd

@@ -1,39 +1,15 @@
 locals {
-  project_name   = "nexus"
-  environment    = "dev"
-  aws_account_id = "123456789012"
+  environment = "dev"
 
-  primary_region = "us-east-1"
-  standby_region = "us-west-2"
-  active_region  = "us-east-1"
+  standby_enabled         = false
+  active_region           = "us-east-1"
+  availability_zone_count = 1
 
-  domain_name           = ""
-  application_subdomain = "nexus"
-  alert_email_address   = "alerts@example.com"
+  application_subdomain = "nexus-dev"
   ingress_port          = 8443
 
-  github = {
-    owner                      = "SergeAbroyan"
-    infrastructure_repository  = "nexus-platform"
-    applications_repository    = "nexus-applications"
-    deployment_branch          = "main"
-    infrastructure_environment = "dev"
-  }
-
-  global = {
-    dns_force_destroy         = true
-    monthly_budget_amount_usd = 200
-
-    ecr = {
-      repository_names              = ["api", "worker"]
-      force_delete                  = true
-      untagged_image_retention_days = 7
-      maximum_image_count           = 20
-    }
-  }
-
   network = {
-    nat_gateway_mode = "one_per_az"
+    nat_gateway_mode = "single"
 
     flow_logs = {
       enabled                  = true
@@ -65,9 +41,9 @@ locals {
     node_group = {
       instance_types = ["t3.large"]
       capacity_type  = "ON_DEMAND"
-      min_size       = 2
-      max_size       = 3
-      desired_size   = 2
+      min_size       = 1
+      max_size       = 2
+      desired_size   = 1
       disk_size      = 30
     }
 
@@ -86,7 +62,7 @@ locals {
       instance_class        = "db.t4g.micro"
       allocated_storage     = 20
       max_allocated_storage = 100
-      multi_az              = true
+      multi_az              = false
       backup_retention_days = 7
       deletion_protection   = false
       skip_final_snapshot   = true
@@ -96,8 +72,8 @@ locals {
     cache = {
       engine_version          = "8.1"
       node_type               = "cache.t4g.micro"
-      num_cache_clusters      = 2
-      multi_az                = true
+      num_cache_clusters      = 1
+      multi_az                = false
       snapshot_retention_days = 1
       log_retention_days      = 7
       apply_immediately       = true
@@ -123,7 +99,7 @@ locals {
   }
 
   platform = {
-    karpenter_replicas                = 2
+    karpenter_replicas                = 1
     load_balancer_deletion_protection = false
 
     gitops = {

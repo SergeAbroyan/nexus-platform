@@ -45,13 +45,24 @@ variable "vpc_cidr_block" {
 }
 
 variable "private_subnet_ids" {
-  description = "Private subnets, one per Availability Zone, used by the control plane and nodes."
+  description = "Private subnets, one per Availability Zone, used by the EKS control plane."
   type        = list(string)
   nullable    = false
 
   validation {
     condition     = length(var.private_subnet_ids) >= 2
     error_message = "EKS requires private subnets in at least two Availability Zones."
+  }
+}
+
+variable "node_subnet_ids" {
+  description = "Private subnets in the workload Availability Zones, used by the managed node group."
+  type        = list(string)
+  nullable    = false
+
+  validation {
+    condition     = length(var.node_subnet_ids) >= 1
+    error_message = "At least one node subnet is required."
   }
 }
 

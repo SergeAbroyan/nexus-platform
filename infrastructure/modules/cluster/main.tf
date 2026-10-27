@@ -92,7 +92,7 @@ module "eks" {
       name                           = "${var.name}-system"
       iam_role_name                  = "${var.name}-system-node"
       iam_role_use_name_prefix       = false
-      subnet_ids                     = var.private_subnet_ids
+      subnet_ids                     = var.node_subnet_ids
       ami_type                       = "AL2023_x86_64_STANDARD"
       instance_types                 = var.node_group.instance_types
       capacity_type                  = var.node_group.capacity_type

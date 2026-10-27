@@ -46,10 +46,15 @@ variable "vpc_cidr_block" {
   nullable    = false
 }
 
-variable "private_subnet_ids" {
-  description = "Private subnets for the internal ingress load balancer."
+variable "load_balancer_subnet_ids" {
+  description = "Private subnets in the workload Availability Zones for the internal ingress load balancer."
   type        = list(string)
   nullable    = false
+
+  validation {
+    condition     = length(var.load_balancer_subnet_ids) >= 1
+    error_message = "The ingress load balancer needs at least one subnet."
+  }
 }
 
 variable "karpenter" {

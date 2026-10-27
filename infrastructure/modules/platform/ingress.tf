@@ -6,7 +6,7 @@ module "ingress_load_balancer" {
   load_balancer_type               = "network"
   internal                         = true
   vpc_id                           = var.vpc_id
-  subnets                          = var.private_subnet_ids
+  subnets                          = var.load_balancer_subnet_ids
   enable_cross_zone_load_balancing = true
   enable_deletion_protection       = var.load_balancer_deletion_protection
 

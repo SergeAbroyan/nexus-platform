@@ -13,9 +13,9 @@ output "application_ci_role_arn" {
   value       = module.application_ci.arn
 }
 
-output "infrastructure_ci_role_arn" {
-  description = "IAM role ARN for the infrastructure deployment workflow; set it as AWS_INFRASTRUCTURE_ROLE_ARN in GitHub."
-  value       = module.infrastructure_ci.arn
+output "infrastructure_ci_role_arns" {
+  description = "Infrastructure deployment role ARN by environment; set each as AWS_INFRASTRUCTURE_ROLE_ARN in the GitHub environment of the same name."
+  value       = { for environment, role in module.infrastructure_ci : environment => role.arn }
 }
 
 output "repository_urls" {

@@ -3,6 +3,15 @@ name: Deploy Infrastructure
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: Environment to deploy
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
       operation:
         description: Terraform operation to run
         required: true
@@ -13,7 +22,7 @@ on:
           - apply
 
 concurrency:
-  group: infrastructure-dev-deployment
+  group: infrastructure-${{ inputs.environment }}-deployment
   cancel-in-progress: false
 
 permissions:
@@ -26,9 +35,9 @@ env:
 
 jobs:
   deploy:
-    name: ${{ inputs.operation }} DEV infrastructure
+    name: ${{ inputs.operation }} ${{ inputs.environment }} infrastructure
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ inputs.environment }}
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -53,8 +62,8 @@ jobs:
 
       - name: Plan infrastructure
         if: inputs.operation == 'plan'
-        run: terragrunt run --all plan --non-interactive --working-dir infrastructure/live/dev
+        run: terragrunt run --all plan --non-interactive --working-dir "infrastructure/live/${{ inputs.environment }}"
 
       - name: Apply infrastructure
         if: inputs.operation == 'apply'
-        run: terragrunt run --all apply --non-interactive --working-dir infrastructure/live/dev
+        run: terragrunt run --all apply --non-interactive --working-dir "infrastructure/live/${{ inputs.environment }}"

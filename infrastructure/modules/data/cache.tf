@@ -43,9 +43,10 @@ module "cache" {
   node_type      = var.cache.node_type
   port           = 6379
 
-  num_cache_clusters         = var.cache.num_cache_clusters
-  multi_az_enabled           = var.cache.multi_az
-  automatic_failover_enabled = var.cache.multi_az
+  num_cache_clusters          = var.cache.num_cache_clusters
+  preferred_cache_cluster_azs = [for index in range(var.cache.num_cache_clusters) : var.availability_zones[index % length(var.availability_zones)]]
+  multi_az_enabled            = var.cache.multi_az
+  automatic_failover_enabled  = var.cache.multi_az
 
   at_rest_encryption_enabled = true
   kms_key_arn                = var.kms_key_arns["valkey"]
