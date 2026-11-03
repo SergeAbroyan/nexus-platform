@@ -14,6 +14,8 @@ inputs = {
   github                      = local.account.github
   terraform_state_bucket_name = "${local.account.project_name}-terraform-state-${local.account.aws_account_id}"
   ecr                         = merge(local.account.ecr, { namespace = local.account.project_name })
+  scheduled_environments      = local.account.scheduled_environments
+  guardduty_enabled           = local.account.guardduty_enabled
 
   budget = {
     monthly_limit_usd  = local.account.monthly_budget_amount_usd

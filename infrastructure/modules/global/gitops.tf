@@ -12,3 +12,18 @@ module "gitops_deploy_key" {
 
   tags = merge(var.tags, { Name = "${var.name}-argocd-gitops-deploy-key" })
 }
+
+module "argocd_github_oauth" {
+  source  = "terraform-aws-modules/secrets-manager/aws"
+  version = "2.2.0"
+
+  name                    = "${var.name}/argocd/github-oauth-client-secret"
+  description             = "Client secret of the GitHub OAuth app that Argo CD uses for sign-in"
+  recovery_window_in_days = 7
+  replica                 = { (var.standby_region) = {} }
+
+  secret_string         = "Replace this value with the client secret of the GitHub OAuth app."
+  ignore_secret_changes = true
+
+  tags = merge(var.tags, { Name = "${var.name}-argocd-github-oauth-client-secret" })
+}

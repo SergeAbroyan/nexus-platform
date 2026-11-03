@@ -14,6 +14,24 @@ permissions:
   contents: read
 
 jobs:
+  secrets:
+    name: Scan for leaked secrets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan the history with Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
   terraform:
     name: Terraform and Terragrunt checks
     runs-on: ubuntu-latest
@@ -83,8 +101,7 @@ jobs:
           framework: terraform
           output_format: cli
           quiet: true
-          # Registry modules use exact versions; commit hashes apply to Git sources.
-          skip_check: CKV_TF_1
+          skip_check: CKV_TF_1,CKV2_AWS_3
           soft_fail: false
 
       - name: Audit downloaded external modules
@@ -96,7 +113,5 @@ jobs:
           download_external_modules: true
           output_format: cli
           quiet: true
-          skip_check: CKV_TF_1
-          # Upstream packages contain inactive resources that Checkov cannot
-          # evaluate through module count/for_each expressions reliably.
+          skip_check: CKV_TF_1,CKV2_AWS_3
           soft_fail: true

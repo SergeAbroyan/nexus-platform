@@ -35,3 +35,12 @@ output "karpenter_service_account" {
     name      = module.karpenter.service_account
   }
 }
+
+output "fault_injection_experiment_template_ids" {
+  description = "AWS FIS experiment template IDs by experiment; start one with aws fis start-experiment."
+  value = {
+    spot_interruption       = aws_fis_experiment_template.spot_interruption.id
+    system_node_failure     = aws_fis_experiment_template.system_node_failure.id
+    zone_network_disruption = aws_fis_experiment_template.zone_network_disruption.id
+  }
+}

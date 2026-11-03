@@ -141,6 +141,50 @@ variable "ecr_registry" {
   nullable    = false
 }
 
+variable "ecr_namespace" {
+  description = "ECR repository namespace of the Nexus images, which Kyverno may read to verify their signatures."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]*$", var.ecr_namespace))
+    error_message = "The ECR namespace must start with a lowercase letter and contain only lowercase letters, numbers, or hyphens."
+  }
+}
+
+variable "ci_identity" {
+  description = "GitHub Actions workflow identity whose keyless cosign signature every Nexus image must carry."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^https://github\\.com/[^/]+/[^/]+/\\.github/workflows/[^@]+@refs/heads/.+$", var.ci_identity))
+    error_message = "The CI identity must be a workflow URL such as https://github.com/owner/repository/.github/workflows/ci.yaml@refs/heads/main."
+  }
+}
+
+variable "slack_webhook_secret_name" {
+  description = "Secrets Manager secret, in every region, that holds the Slack incoming webhook URL for Alertmanager."
+  type        = string
+  nullable    = false
+}
+
+variable "github_sso" {
+  description = "Argo CD sign-in with GitHub through Dex: the OAuth app client ID, the Secrets Manager secret with its client secret, and the GitHub logins that become administrators."
+  type = object({
+    enabled            = bool
+    client_id          = string
+    client_secret_name = string
+    admin_logins       = list(string)
+  })
+  nullable = false
+
+  validation {
+    condition     = !var.github_sso.enabled || (length(trimspace(var.github_sso.client_id)) > 0 && length(var.github_sso.admin_logins) > 0)
+    error_message = "GitHub sign-in needs the OAuth app client ID and at least one administrator login."
+  }
+}
+
 variable "application_hostname" {
   description = "Public hostname accepted by the Istio gateway."
   type        = string
@@ -182,6 +226,7 @@ variable "argocd" {
       requests = map(string)
       limits   = map(string)
     })
+    secrets_revision = number
   })
   nullable = false
 
@@ -192,6 +237,11 @@ variable "argocd" {
     )
     error_message = "Use an HTTPS chart repository and an exact semantic chart version."
   }
+
+  validation {
+    condition     = var.argocd.secrets_revision >= 1 && floor(var.argocd.secrets_revision) == var.argocd.secrets_revision
+    error_message = "Increase secrets_revision by one, starting at 1, each time the deploy key or the GitHub OAuth client secret changes."
+  }
 }
 
 variable "gitops" {
@@ -200,17 +250,11 @@ variable "gitops" {
     repository             = string
     revision               = string
     deploy_key_secret_name = string
-    deploy_key_revision    = number
   })
   nullable = false
 
   validation {
     condition     = can(regex("^git@", var.gitops.repository)) && length(trimspace(var.gitops.revision)) > 0
     error_message = "The GitOps repository must be an SSH URL such as git@github.com:owner/repository.git, and the revision cannot be empty."
-  }
-
-  validation {
-    condition     = var.gitops.deploy_key_revision >= 1 && floor(var.gitops.deploy_key_revision) == var.gitops.deploy_key_revision
-    error_message = "Increase deploy_key_revision by one, starting at 1, each time the deploy key changes."
   }
 }

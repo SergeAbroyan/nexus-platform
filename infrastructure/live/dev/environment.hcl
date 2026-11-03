@@ -41,7 +41,7 @@ locals {
     node_group = {
       instance_types = ["t3.large", "t3a.large", "m5.large", "m5a.large", "m6i.large", "m6a.large", "m7i.large"]
       capacity_type  = "SPOT"
-      min_size       = 1
+      min_size       = 0
       max_size       = 2
       desired_size   = 1
       disk_size      = 30
@@ -102,14 +102,14 @@ locals {
     load_balancer_deletion_protection = false
 
     gitops = {
-      revision            = "main"
-      deploy_key_revision = 1
+      revision = "main"
     }
 
     argocd = {
       namespace        = "argocd"
       chart_repository = "https://argoproj.github.io/argo-helm"
       chart_version    = "10.11.6"
+      secrets_revision = 1
 
       controller_resources = {
         requests = { cpu = "100m", memory = "256Mi" }

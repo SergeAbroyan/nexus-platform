@@ -1,4 +1,21 @@
 locals {
+  github_sso = var.github_sso.enabled
+
+  sso_config = local.github_sso ? {
+    url = "http://localhost:8080"
+    "dex.config" = yamlencode({
+      connectors = [{
+        type = "github"
+        id   = "github"
+        name = "GitHub"
+        config = {
+          clientID     = var.github_sso.client_id
+          clientSecret = "$dex.github.clientSecret"
+        }
+      }]
+    })
+  } : {}
+
   values = {
     global = {
       domain = "argocd.nexus.local"
@@ -7,8 +24,8 @@ locals {
       params = {
         "server.insecure" = true
       }
-      cm = {
-        "admin.enabled"                                          = true
+      cm = merge(local.sso_config, {
+        "admin.enabled"                                          = !local.github_sso
         "application.resourceTrackingMethod"                     = "annotation"
         "resource.customizations.health.argoproj.io_Application" = <<-EOT
           hs = { status = "Progressing", message = "" }
@@ -20,7 +37,12 @@ locals {
           end
           return hs
         EOT
-      }
+      })
+      rbac = local.github_sso ? {
+        "policy.default" = ""
+        "policy.csv"     = join("\n", [for login in var.github_sso.admin_logins : "g, ${login}, role:admin"])
+        scopes           = "[preferred_username]"
+      } : {}
       repositories = {
         gitops = {
           name = "gitops"
@@ -32,10 +54,12 @@ locals {
     controller = {
       replicas  = 1
       resources = var.argocd.controller_resources
+      metrics   = { enabled = true }
     }
     server = {
       replicas  = 1
       resources = var.argocd.server_resources
+      metrics   = { enabled = true }
       service = {
         type = "ClusterIP"
       }
@@ -43,12 +67,13 @@ locals {
     repoServer = {
       replicas  = 1
       resources = var.argocd.repository_server_resources
+      metrics   = { enabled = true }
     }
     applicationSet = {
       replicas = 0
     }
     dex = {
-      enabled = false
+      enabled = local.github_sso
     }
     notifications = {
       enabled = false
@@ -58,6 +83,12 @@ locals {
 
 ephemeral "aws_secretsmanager_secret_version" "gitops_deploy_key" {
   secret_id = var.gitops.deploy_key_secret_name
+}
+
+ephemeral "aws_secretsmanager_secret_version" "github_oauth_client_secret" {
+  count = local.github_sso ? 1 : 0
+
+  secret_id = var.github_sso.client_secret_name
 }
 
 resource "helm_release" "argocd" {
@@ -76,12 +107,19 @@ resource "helm_release" "argocd" {
 
   values = [yamlencode(local.values)]
 
-  set_wo = [{
-    name  = "configs.repositories.gitops.sshPrivateKey"
-    type  = "string"
-    value = ephemeral.aws_secretsmanager_secret_version.gitops_deploy_key.secret_string
-  }]
-  set_wo_revision = var.gitops.deploy_key_revision
+  set_wo = concat(
+    [{
+      name  = "configs.repositories.gitops.sshPrivateKey"
+      type  = "string"
+      value = ephemeral.aws_secretsmanager_secret_version.gitops_deploy_key.secret_string
+    }],
+    local.github_sso ? [{
+      name  = "configs.secret.extra.dex\\.github\\.clientSecret"
+      type  = "string"
+      value = ephemeral.aws_secretsmanager_secret_version.github_oauth_client_secret[0].secret_string
+    }] : [],
+  )
+  set_wo_revision = var.argocd.secrets_revision
 }
 
 resource "helm_release" "gitops_bootstrap" {
@@ -103,6 +141,7 @@ resource "helm_release" "gitops_bootstrap" {
     module.api,
     module.external_secrets,
     module.grafana,
+    module.kyverno,
     module.load_balancer_controller,
     module.worker,
   ]

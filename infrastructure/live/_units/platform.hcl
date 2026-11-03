@@ -108,6 +108,9 @@ inputs = {
   }
 
   ecr_registry                      = "${local.account.aws_account_id}.dkr.ecr.${local.region.aws_region}.amazonaws.com"
+  ecr_namespace                     = local.account.project_name
+  ci_identity                       = "https://github.com/${local.account.github.owner}/${local.account.github.applications_repository}/.github/workflows/ci.yaml@refs/heads/${local.account.github.deployment_branch}"
+  slack_webhook_secret_name         = dependency.global.outputs.slack_webhook_secret_name
   application_hostname              = "${local.environment.application_subdomain}.${local.account.domain_name}"
   ingress_port                      = local.environment.ingress_port
   load_balancer_deletion_protection = local.environment.platform.load_balancer_deletion_protection
@@ -117,6 +120,9 @@ inputs = {
     repository             = "git@github.com:${local.account.github.owner}/${local.account.github.gitops_repository}.git"
     revision               = local.environment.platform.gitops.revision
     deploy_key_secret_name = dependency.global.outputs.gitops_deploy_key_secret_name
-    deploy_key_revision    = local.environment.platform.gitops.deploy_key_revision
   }
+
+  github_sso = merge(local.account.argocd_github_sso, {
+    client_secret_name = dependency.global.outputs.argocd_github_oauth_secret_name
+  })
 }

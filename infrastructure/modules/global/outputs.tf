@@ -32,3 +32,18 @@ output "gitops_deploy_key_secret_name" {
   description = "Secrets Manager secret, replicated to the standby region, that holds the read-only SSH key Argo CD uses for the GitOps repository."
   value       = module.gitops_deploy_key.secret_name
 }
+
+output "argocd_github_oauth_secret_name" {
+  description = "Secrets Manager secret, replicated to the standby region, that holds the client secret of the GitHub OAuth app for Argo CD sign-in."
+  value       = module.argocd_github_oauth.secret_name
+}
+
+output "slack_webhook_secret_name" {
+  description = "Secrets Manager secret, replicated to the standby region, that holds the Slack webhook URL for Alertmanager."
+  value       = module.slack_webhook.secret_name
+}
+
+output "environment_scheduler_role_arns" {
+  description = "IAM role ARN by environment for the workflow that stops and starts it; set each as AWS_SCHEDULER_ROLE_ARN in GitHub."
+  value       = { for environment, role in module.environment_scheduler : environment => role.arn }
+}

@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-yaml
+        exclude: ^infrastructure/modules/platform/charts/.+/templates/
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: local
+    hooks:
+      - id: terraform-fmt
+        name: terraform fmt
+        entry: terraform fmt -check -recursive infrastructure
+        language: system
+        files: \.tf$
+        pass_filenames: false
+      - id: terragrunt-hcl-fmt
+        name: terragrunt hcl fmt
+        entry: terragrunt hcl fmt --check --working-dir infrastructure/live
+        language: system
+        files: \.hcl$
+        pass_filenames: false
+      - id: tflint
+        name: tflint
+        entry: bash -c 'for module in infrastructure/modules/*/; do tflint --chdir="${module}" || exit 1; done'
+        language: system
+        files: \.tf$
+        pass_filenames: false

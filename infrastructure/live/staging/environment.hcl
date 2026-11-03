@@ -102,14 +102,14 @@ locals {
     load_balancer_deletion_protection = false
 
     gitops = {
-      revision            = "main"
-      deploy_key_revision = 1
+      revision = "main"
     }
 
     argocd = {
       namespace        = "argocd"
       chart_repository = "https://argoproj.github.io/argo-helm"
       chart_version    = "10.11.6"
+      secrets_revision = 1
 
       controller_resources = {
         requests = { cpu = "200m", memory = "512Mi" }

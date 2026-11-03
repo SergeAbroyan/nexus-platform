@@ -18,6 +18,15 @@ locals {
     deployment_branch         = "main"
   }
 
+  argocd_github_sso = {
+    enabled      = false
+    client_id    = ""
+    admin_logins = ["SergeAbroyan"]
+  }
+
+  scheduled_environments = ["dev"]
+  guardduty_enabled      = false
+
   dns_force_destroy         = true
   monthly_budget_amount_usd = 200
 

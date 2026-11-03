@@ -1,0 +1,112 @@
+name: Environment schedule
+
+on:
+  schedule:
+    - cron: "0 19 * * 1-5"
+    - cron: "0 5 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to stop or start
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+      action:
+        description: Stop or start the environment
+        required: true
+        default: start
+        type: choice
+        options:
+          - stop
+          - start
+
+concurrency:
+  group: environment-schedule
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT: nexus
+  REGIONS: us-east-1 us-west-2
+  ENVIRONMENT: ${{ inputs.environment || 'dev' }}
+  ACTION: ${{ inputs.action || (github.event.schedule == '0 19 * * 1-5' && 'stop' || 'start') }}
+
+jobs:
+  schedule:
+    name: ${{ inputs.action || (github.event.schedule == '0 19 * * 1-5' && 'stop' || 'start') }} ${{ inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Record skipped run
+        if: vars.AWS_SCHEDULER_ROLE_ARN == ''
+        run: echo "Skipped because the AWS_SCHEDULER_ROLE_ARN variable is not configured." >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Configure AWS credentials
+        if: vars.AWS_SCHEDULER_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.AWS_SCHEDULER_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Stop the environment
+        if: vars.AWS_SCHEDULER_ROLE_ARN != '' && env.ACTION == 'stop'
+        run: |
+          set -euo pipefail
+          prefix="${PROJECT}-${ENVIRONMENT}-"
+          for region in ${REGIONS}; do
+            for cluster in $(aws eks list-clusters --region "${region}" --query "clusters[?starts_with(@, '${prefix}')]" --output text); do
+              for nodegroup in $(aws eks list-nodegroups --region "${region}" --cluster-name "${cluster}" --query 'nodegroups[]' --output text); do
+                aws eks update-nodegroup-config --region "${region}" --cluster-name "${cluster}" \
+                  --nodegroup-name "${nodegroup}" --scaling-config desiredSize=0 > /dev/null
+                aws eks wait nodegroup-active --region "${region}" --cluster-name "${cluster}" --nodegroup-name "${nodegroup}"
+                echo "- ${region}: scaled node group \`${nodegroup}\` to zero" >> "${GITHUB_STEP_SUMMARY}"
+              done
+
+              instances="$(aws ec2 describe-instances --region "${region}" \
+                --filters "Name=tag:Name,Values=${cluster}-karpenter" "Name=tag:ManagedBy,Values=Karpenter" \
+                          "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+                --query 'Reservations[].Instances[].InstanceId' --output text)"
+              if [[ -n "${instances}" ]]; then
+                read -r -a instance_ids <<< "${instances}"
+                aws ec2 terminate-instances --region "${region}" --instance-ids "${instance_ids[@]}" > /dev/null
+                echo "- ${region}: terminated ${#instance_ids[@]} Karpenter nodes of \`${cluster}\`" >> "${GITHUB_STEP_SUMMARY}"
+              fi
+            done
+
+            for database in $(aws rds describe-db-instances --region "${region}" \
+              --query "DBInstances[?starts_with(DBInstanceIdentifier, '${prefix}') && DBInstanceStatus == 'available' && ReadReplicaSourceDBInstanceIdentifier == null && length(ReadReplicaDBInstanceIdentifiers) == \`0\`].DBInstanceIdentifier" \
+              --output text); do
+              aws rds stop-db-instance --region "${region}" --db-instance-identifier "${database}" > /dev/null
+              echo "- ${region}: stopped database \`${database}\`" >> "${GITHUB_STEP_SUMMARY}"
+            done
+          done
+
+      - name: Start the environment
+        if: vars.AWS_SCHEDULER_ROLE_ARN != '' && env.ACTION == 'start'
+        run: |
+          set -euo pipefail
+          prefix="${PROJECT}-${ENVIRONMENT}-"
+          for region in ${REGIONS}; do
+            for database in $(aws rds describe-db-instances --region "${region}" \
+              --query "DBInstances[?starts_with(DBInstanceIdentifier, '${prefix}') && DBInstanceStatus == 'stopped'].DBInstanceIdentifier" \
+              --output text); do
+              aws rds start-db-instance --region "${region}" --db-instance-identifier "${database}" > /dev/null
+              echo "- ${region}: started database \`${database}\`" >> "${GITHUB_STEP_SUMMARY}"
+            done
+
+            for cluster in $(aws eks list-clusters --region "${region}" --query "clusters[?starts_with(@, '${prefix}')]" --output text); do
+              for nodegroup in $(aws eks list-nodegroups --region "${region}" --cluster-name "${cluster}" --query 'nodegroups[]' --output text); do
+                minimum="$(aws eks describe-nodegroup --region "${region}" --cluster-name "${cluster}" \
+                  --nodegroup-name "${nodegroup}" --query 'nodegroup.scalingConfig.minSize' --output text)"
+                desired=$(( minimum > 1 ? minimum : 1 ))
+                aws eks update-nodegroup-config --region "${region}" --cluster-name "${cluster}" \
+                  --nodegroup-name "${nodegroup}" --scaling-config "desiredSize=${desired}" > /dev/null
+                echo "- ${region}: scaled node group \`${nodegroup}\` to ${desired}; Karpenter starts the rest" >> "${GITHUB_STEP_SUMMARY}"
+              done
+            done
+          done

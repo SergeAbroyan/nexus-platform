@@ -28,14 +28,17 @@ locals {
       karpenter              = var.karpenter.service_account
       loadBalancerController = local.service_accounts.load_balancer_controller
       externalSecrets        = local.service_accounts.external_secrets
+      kyverno                = local.service_accounts.kyverno
       alertmanager           = local.service_accounts.alertmanager
       grafana                = local.service_accounts.grafana
       api                    = local.service_accounts.api
       worker                 = local.service_accounts.worker
     }
 
-    alertTopicArn         = var.alert_topic_arn
-    grafanaAdminSecretArn = var.grafana_admin_secret_arn
+    alertTopicArn          = var.alert_topic_arn
+    grafanaAdminSecretArn  = var.grafana_admin_secret_arn
+    slackWebhookSecretName = var.slack_webhook_secret_name
+    ciIdentity             = var.ci_identity
 
     database = {
       host      = var.database.host

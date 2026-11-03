@@ -1,10 +1,17 @@
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
 locals {
   application_namespace = "nexus"
   monitoring_namespace  = "monitoring"
 
+  regional_arn_prefix = "arn:${data.aws_partition.current.partition}:%s:${var.region}:${data.aws_caller_identity.current.account_id}"
+
   service_accounts = {
     load_balancer_controller = { namespace = "kube-system", name = "aws-load-balancer-controller" }
     external_secrets         = { namespace = "external-secrets", name = "external-secrets" }
+    kyverno                  = { namespace = "kyverno", name = "kyverno-admission-controller" }
     alertmanager             = { namespace = local.monitoring_namespace, name = "alertmanager" }
     grafana                  = { namespace = local.monitoring_namespace, name = "grafana" }
     api                      = { namespace = local.application_namespace, name = "api" }
@@ -53,7 +60,11 @@ module "external_secrets" {
         "secretsmanager:GetSecretValue",
         "secretsmanager:ListSecretVersionIds",
       ]
-      resources = [var.database.secret_arn, var.grafana_admin_secret_arn]
+      resources = [
+        var.database.secret_arn,
+        var.grafana_admin_secret_arn,
+        "${format(local.regional_arn_prefix, "secretsmanager")}:secret:${var.slack_webhook_secret_name}-??????",
+      ]
     },
     {
       sid       = "DecryptSecrets"
@@ -67,6 +78,46 @@ module "external_secrets" {
       cluster_name    = var.cluster_name
       namespace       = local.service_accounts.external_secrets.namespace
       service_account = local.service_accounts.external_secrets.name
+    }
+  }
+
+  tags = var.tags
+}
+
+module "kyverno" {
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
+  version = "2.10.0"
+
+  name            = "${var.name}-kyverno"
+  use_name_prefix = false
+  description     = "Pod Identity role for the Kyverno admission controller"
+
+  attach_custom_policy      = true
+  custom_policy_description = "Read Nexus images and their signatures from ECR"
+  policy_statements = [
+    {
+      sid       = "GetEcrAuthorizationToken"
+      actions   = ["ecr:GetAuthorizationToken"]
+      resources = ["*"]
+    },
+    {
+      sid = "ReadNexusImages"
+      actions = [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:DescribeImages",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:ListImages",
+      ]
+      resources = ["${format(local.regional_arn_prefix, "ecr")}:repository/${var.ecr_namespace}/*"]
+    },
+  ]
+
+  associations = {
+    admission_controller = {
+      cluster_name    = var.cluster_name
+      namespace       = local.service_accounts.kyverno.namespace
+      service_account = local.service_accounts.kyverno.name
     }
   }
 
