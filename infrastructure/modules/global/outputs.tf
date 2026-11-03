@@ -42,8 +42,3 @@ output "slack_webhook_secret_name" {
   description = "Secrets Manager secret, replicated to the standby region, that holds the Slack webhook URL for Alertmanager."
   value       = module.slack_webhook.secret_name
 }
-
-output "environment_scheduler_role_arns" {
-  description = "IAM role ARN by environment for the workflow that stops and starts it; set each as AWS_SCHEDULER_ROLE_ARN in GitHub."
-  value       = { for environment, role in module.environment_scheduler : environment => role.arn }
-}

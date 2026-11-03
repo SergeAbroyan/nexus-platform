@@ -119,18 +119,6 @@ variable "budget" {
   }
 }
 
-variable "scheduled_environments" {
-  description = "Environments that a GitHub Actions workflow stops outside working hours and starts again."
-  type        = set(string)
-  default     = []
-  nullable    = false
-
-  validation {
-    condition     = length(setsubtract(var.scheduled_environments, var.environments)) == 0
-    error_message = "Every scheduled environment must also be listed in environments."
-  }
-}
-
 variable "guardduty_enabled" {
   description = "Whether GuardDuty threat detection, EKS audit log monitoring, and EKS runtime monitoring run in the primary and standby regions."
   type        = bool

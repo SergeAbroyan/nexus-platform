@@ -24,8 +24,7 @@ locals {
     admin_logins = ["SergeAbroyan"]
   }
 
-  scheduled_environments = ["dev"]
-  guardduty_enabled      = false
+  guardduty_enabled = false
 
   dns_force_destroy         = true
   monthly_budget_amount_usd = 200

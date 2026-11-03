@@ -41,7 +41,7 @@ locals {
     node_group = {
       instance_types = ["t3.large", "t3a.large", "m5.large", "m5a.large", "m6i.large", "m6a.large", "m7i.large"]
       capacity_type  = "SPOT"
-      min_size       = 0
+      min_size       = 1
       max_size       = 2
       desired_size   = 1
       disk_size      = 30

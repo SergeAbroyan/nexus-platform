@@ -65,7 +65,7 @@ The switches are in each `environment.hcl`:
 infrastructure/
 ├── bootstrap/            One-time Terraform state bucket
 ├── modules/              Seven reusable Terraform modules
-│   ├── global/           GitHub CI and schedule roles, Route 53 zone, ECR and replication,
+│   ├── global/           GitHub CI roles, Route 53 zone, ECR and replication,
 │   │                     budget, shared secrets, optional GuardDuty
 │   ├── network/          VPC, subnets, NAT gateways, flow logs
 │   ├── security/         KMS keys, Grafana secret, regional alert topic
@@ -88,7 +88,6 @@ infrastructure/
 .github/workflows/
 ├── validate.yaml             Formatting, validation, TFLint, and Checkov
 ├── deploy.yaml               Plan or apply one environment on demand
-├── environment-schedule.yaml Stop DEV outside working hours and start it again
 └── infracost.yaml            Monthly cost change of every pull request
 renovate.json                 Dependency updates for modules, providers, tools, and actions
 .pre-commit-config.yaml       Local checks before every commit
@@ -99,8 +98,8 @@ definition in `_units/`, so every environment and region uses the same unit
 code. Settings live in three places:
 
 - `account.hcl`: AWS account, primary and standby regions, domain, alert email,
-  GitHub repositories, Argo CD GitHub sign-in, the environments stopped at
-  night, GuardDuty, budget, and container registry
+  GitHub repositories, Argo CD GitHub sign-in, GuardDuty, budget, and container
+  registry
 - `<environment>/environment.hcl`: the switches above and every sizing and
   retention setting of that environment
 - `<environment>/<region>/region.hcl`: the region's network ranges; each
@@ -110,9 +109,9 @@ The `global` unit is shared because all environments live in one AWS account.
 The GitHub OIDC provider, the ECR repositories, the Route 53 zone, and the
 budget can exist only once per account, and images are promoted between
 environments by commit SHA from the same repositories. `global` also creates
-one infrastructure CI role per environment, the role that stops and starts the
-scheduled environments, and the secrets that every cluster reads: the GitOps
-deploy key, the Slack webhook URL, and the GitHub OAuth client secret.
+one infrastructure CI role per environment and the secrets that every cluster
+reads: the GitOps deploy key, the Slack webhook URL, and the GitHub OAuth
+client secret.
 
 Resources are named `nexus` for account-wide resources, `nexus-<environment>`
 for the environment edge, and `nexus-<environment>-<region code>` for regional
@@ -163,8 +162,6 @@ Optional switches in `account.hcl`:
 
 - `argocd_github_sso`: sign in to Argo CD with GitHub instead of the local
   `admin` account; see [Argo CD sign-in](#argo-cd-sign-in)
-- `scheduled_environments`: environments that stop outside working hours; see
-  [Stopping DEV outside working hours](#stopping-dev-outside-working-hours)
 - `guardduty_enabled`: GuardDuty threat detection with EKS audit log and EKS
   runtime monitoring in both regions
 
@@ -456,29 +453,6 @@ Rough monthly cost when running all the time:
 
 The account budget in `account.hcl` sends alerts at 50%, 80%, and 100% of the
 monthly amount. Destroy environments that are not in use.
-
-### Stopping DEV outside working hours
-
-`.github/workflows/environment-schedule.yaml` stops every environment listed in
-`scheduled_environments` at 19:00 UTC on weekdays and starts it at 05:00 UTC,
-so DEV is off at night and from Friday evening to Monday morning, about 60% of
-the week. Change the two `cron` lines for another time zone; the stop line must
-stay the one the workflow compares against. It can also run on demand from the
-Actions tab.
-
-Stopping scales the managed system node group to zero, which also stops
-Karpenter, terminates the Karpenter nodes, and stops PostgreSQL. Starting
-starts PostgreSQL and scales the node group back up; Karpenter then launches
-nodes for the pending pods and Argo CD resumes. EC2 and RDS compute stop
-costing while DEV is off; EKS, the NAT gateway, Valkey, the load balancer,
-storage, and CloudFront keep running. A scheduled environment needs
-`node_group.min_size = 0`, and Terraform ignores the node group's desired size,
-so applying while DEV is stopped does not start it.
-
-Set the repository variable `AWS_SCHEDULER_ROLE_ARN` to the DEV entry of the
-`global` output `environment_scheduler_role_arns`. The role can only scale
-DEV node groups, terminate DEV Karpenter nodes, and stop and start DEV
-databases. GitHub disables scheduled workflows after 60 days without commits.
 
 ### Cost estimates
 
