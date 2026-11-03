@@ -16,7 +16,7 @@ Application together with the AWS facts that `nexus-gitops` needs.
 
 | Environment | Regions | Availability Zones | Purpose |
 | --- | --- | --- | --- |
-| `dev` | `us-east-1` | 1 | Low-cost development |
+| `dev` | `us-east-1` | 1 | Low-cost development on Spot instances |
 | `staging` | `us-east-1`, standby `us-west-2` | 3 | Production-like testing |
 | `production` | `us-east-1`, standby `us-west-2` | 3 | Highly available service |
 
@@ -333,9 +333,10 @@ object storage.
 
 Rough monthly cost when running all the time:
 
-- `dev` as configured, one region and one zone: about $300–360 for EKS, one NAT
+- `dev` as configured, one region and one zone: about $200–270 for EKS, one NAT
   gateway, one system node, Karpenter nodes, single-AZ PostgreSQL and Valkey,
-  the load balancer, CloudFront, and WAF
+  the load balancer, CloudFront, and WAF. Its nodes run on Spot, which is
+  roughly 60% cheaper than On-Demand; On-Demand nodes would add about $90–130
 - `staging` or `production` with both regions and three zones: about
   $1,000–1,500 or more, depending on instance sizes
 
