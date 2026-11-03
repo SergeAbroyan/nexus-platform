@@ -84,11 +84,10 @@ variable "terraform_state_bucket_name" {
 variable "ecr" {
   description = "Container registry settings shared by the primary and standby regions."
   type = object({
-    namespace                     = string
-    repository_names              = set(string)
-    force_delete                  = bool
-    untagged_image_retention_days = number
-    maximum_image_count           = number
+    namespace           = string
+    repository_names    = set(string)
+    force_delete        = bool
+    maximum_image_count = number
   })
   nullable = false
 
@@ -97,7 +96,6 @@ variable "ecr" {
       can(regex("^[a-z][a-z0-9-]*$", var.ecr.namespace)) &&
       length(var.ecr.repository_names) > 0 &&
       alltrue([for name in var.ecr.repository_names : can(regex("^[a-z][a-z0-9-]*$", name))]) &&
-      var.ecr.untagged_image_retention_days >= 1 &&
       var.ecr.maximum_image_count >= 1
     )
     error_message = "ECR needs a lowercase namespace, at least one lowercase repository name, and positive retention settings."

@@ -381,6 +381,12 @@ identity as the `ciIdentity` fact, built from the `github` settings in
 `account.hcl`, and gives the Kyverno admission controller a Pod Identity role
 that can read only the Nexus repositories in its region.
 
+Signatures and SBOM attestations are stored next to each image as OCI
+referrers, without tags, and ECR deletes them together with their image. The
+repositories therefore have no rule that expires untagged images; the only
+lifecycle rule keeps the newest `maximum_image_count` images and artifacts in
+each repository.
+
 ### Ingress
 
 Terraform creates each region's internal Network Load Balancer and target

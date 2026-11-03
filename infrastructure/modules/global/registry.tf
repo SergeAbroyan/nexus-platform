@@ -5,19 +5,6 @@ locals {
     rules = [
       {
         rulePriority = 1
-        description  = "Expire untagged images"
-        selection = {
-          tagStatus   = "untagged"
-          countType   = "sinceImagePushed"
-          countUnit   = "days"
-          countNumber = var.ecr.untagged_image_retention_days
-        }
-        action = {
-          type = "expire"
-        }
-      },
-      {
-        rulePriority = 2
         description  = "Retain only the newest images"
         selection = {
           tagStatus   = "any"

@@ -31,9 +31,8 @@ locals {
   monthly_budget_amount_usd = 200
 
   ecr = {
-    repository_names              = ["api", "worker"]
-    force_delete                  = true
-    untagged_image_retention_days = 7
-    maximum_image_count           = 100
+    repository_names    = ["api", "worker"]
+    force_delete        = true
+    maximum_image_count = 300
   }
 }
