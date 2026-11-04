@@ -38,6 +38,7 @@ inputs = {
   cache    = local.environment.data.cache
   queue    = local.environment.data.queue
   alarms   = local.environment.data.alarms
+  backup   = local.environment.data.backup
 
   replication_source = local.standby ? {
     db_instance_arn                = dependency.primary.outputs.database_arn

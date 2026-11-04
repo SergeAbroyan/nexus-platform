@@ -202,6 +202,12 @@ variable "ingress_port" {
   nullable    = false
 }
 
+variable "backup_bucket_force_destroy" {
+  description = "Whether destroying the platform unit also deletes the Velero backups in its bucket."
+  type        = bool
+  nullable    = false
+}
+
 variable "load_balancer_deletion_protection" {
   description = "Whether AWS prevents accidental deletion of the internal ingress load balancer."
   type        = bool

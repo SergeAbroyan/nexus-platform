@@ -83,6 +83,8 @@ module "infrastructure_ci" {
         "eks:*",
         "elasticache:*",
         "elasticloadbalancing:*",
+        "backup:*",
+        "backup-storage:*",
         "events:*",
         "fis:*",
         "guardduty:*",
@@ -98,6 +100,13 @@ module "infrastructure_ci" {
         "wafv2:*",
       ]
       resources = ["*"]
+    }
+    ManageEnvironmentBuckets = {
+      actions = ["s3:*"]
+      resources = [
+        "arn:${local.partition}:s3:::${var.name}-${each.key}-*",
+        "arn:${local.partition}:s3:::${var.name}-${each.key}-*/*",
+      ]
     }
     ReadTerraformStateBucket = {
       actions = [

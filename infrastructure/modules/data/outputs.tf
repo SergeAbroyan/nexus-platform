@@ -72,3 +72,8 @@ output "queue_arn" {
   description = "ARN of the job queue."
   value       = module.queue.queue_arn
 }
+
+output "backup_vault_name" {
+  description = "AWS Backup vault that holds the database recovery points; null in a region that is still replicating."
+  value       = one(aws_backup_vault.database[*].name)
+}

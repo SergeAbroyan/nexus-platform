@@ -190,3 +190,18 @@ variable "alarms" {
     error_message = "Alarm periods must be at least 60 seconds, and thresholds must be positive percentages or values."
   }
 }
+
+variable "backup" {
+  description = "AWS Backup schedule and retention for the database, and whether destroying the unit deletes its recovery points."
+  type = object({
+    schedule       = string
+    retention_days = number
+    force_destroy  = bool
+  })
+  nullable = false
+
+  validation {
+    condition     = can(regex("^cron\\(.+\\)$", var.backup.schedule)) && var.backup.retention_days >= 1 && var.backup.retention_days <= 35
+    error_message = "The backup schedule must be a cron() expression, and continuous backups keep between 1 and 35 days."
+  }
+}

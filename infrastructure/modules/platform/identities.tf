@@ -8,10 +8,32 @@ locals {
 
   regional_arn_prefix = "arn:${data.aws_partition.current.partition}:%s:${var.region}:${data.aws_caller_identity.current.account_id}"
 
+  read_nexus_images = [
+    {
+      sid       = "GetEcrAuthorizationToken"
+      actions   = ["ecr:GetAuthorizationToken"]
+      resources = ["*"]
+    },
+    {
+      sid = "ReadNexusImages"
+      actions = [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:DescribeImages",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:ListImages",
+      ]
+      resources = ["${format(local.regional_arn_prefix, "ecr")}:repository/${var.ecr_namespace}/*"]
+    },
+  ]
+
   service_accounts = {
     load_balancer_controller = { namespace = "kube-system", name = "aws-load-balancer-controller" }
     external_secrets         = { namespace = "external-secrets", name = "external-secrets" }
     kyverno                  = { namespace = "kyverno", name = "kyverno-admission-controller" }
+    keda                     = { namespace = "keda", name = "keda-operator" }
+    trivy_operator           = { namespace = "trivy-system", name = "trivy-operator" }
+    velero                   = { namespace = "velero", name = "velero-server" }
     alertmanager             = { namespace = local.monitoring_namespace, name = "alertmanager" }
     grafana                  = { namespace = local.monitoring_namespace, name = "grafana" }
     api                      = { namespace = local.application_namespace, name = "api" }
@@ -94,30 +116,105 @@ module "kyverno" {
 
   attach_custom_policy      = true
   custom_policy_description = "Read Nexus images and their signatures from ECR"
-  policy_statements = [
-    {
-      sid       = "GetEcrAuthorizationToken"
-      actions   = ["ecr:GetAuthorizationToken"]
-      resources = ["*"]
-    },
-    {
-      sid = "ReadNexusImages"
-      actions = [
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:BatchGetImage",
-        "ecr:DescribeImages",
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:ListImages",
-      ]
-      resources = ["${format(local.regional_arn_prefix, "ecr")}:repository/${var.ecr_namespace}/*"]
-    },
-  ]
+  policy_statements         = local.read_nexus_images
 
   associations = {
     admission_controller = {
       cluster_name    = var.cluster_name
       namespace       = local.service_accounts.kyverno.namespace
       service_account = local.service_accounts.kyverno.name
+    }
+  }
+
+  tags = var.tags
+}
+
+module "keda" {
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
+  version = "2.10.0"
+
+  name            = "${var.name}-keda"
+  use_name_prefix = false
+  description     = "Pod Identity role for the KEDA operator"
+
+  attach_custom_policy      = true
+  custom_policy_description = "Read the depth of the Nexus job queue"
+  policy_statements = [
+    {
+      sid       = "ReadQueueDepth"
+      actions   = ["sqs:GetQueueAttributes"]
+      resources = [var.queue.arn]
+    },
+  ]
+
+  associations = {
+    operator = {
+      cluster_name    = var.cluster_name
+      namespace       = local.service_accounts.keda.namespace
+      service_account = local.service_accounts.keda.name
+    }
+  }
+
+  tags = var.tags
+}
+
+module "trivy_operator" {
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
+  version = "2.10.0"
+
+  name            = "${var.name}-trivy-operator"
+  use_name_prefix = false
+  description     = "Pod Identity role for the Trivy Operator vulnerability scans"
+
+  attach_custom_policy      = true
+  custom_policy_description = "Read Nexus images from ECR to scan them"
+  policy_statements         = local.read_nexus_images
+
+  associations = {
+    operator = {
+      cluster_name    = var.cluster_name
+      namespace       = local.service_accounts.trivy_operator.namespace
+      service_account = local.service_accounts.trivy_operator.name
+    }
+  }
+
+  tags = var.tags
+}
+
+module "velero" {
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
+  version = "2.10.0"
+
+  name            = "${var.name}-velero"
+  use_name_prefix = false
+  description     = "Pod Identity role for Velero cluster backups"
+
+  attach_custom_policy      = true
+  custom_policy_description = "Read and write Velero backups in the cluster backup bucket"
+  policy_statements = [
+    {
+      sid       = "ListBackups"
+      actions   = ["s3:ListBucket"]
+      resources = [module.backup_bucket.s3_bucket_arn]
+    },
+    {
+      sid = "ManageBackupObjects"
+      actions = [
+        "s3:AbortMultipartUpload",
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:ListMultipartUploadParts",
+        "s3:PutObject",
+      ]
+      resources = ["${module.backup_bucket.s3_bucket_arn}/*"]
+    },
+  ]
+
+  associations = {
+    server = {
+      cluster_name    = var.cluster_name
+      namespace       = local.service_accounts.velero.namespace
+      service_account = local.service_accounts.velero.name
     }
   }
 

@@ -8,6 +8,11 @@ output "ingress_load_balancer_dns_name" {
   value       = module.ingress_load_balancer.dns_name
 }
 
+output "backup_bucket_name" {
+  description = "S3 bucket that holds the Velero backups of this cluster."
+  value       = module.backup_bucket.s3_bucket_id
+}
+
 output "argocd_namespace" {
   description = "Kubernetes namespace that contains Argo CD."
   value       = var.argocd.namespace

@@ -29,6 +29,9 @@ locals {
       loadBalancerController = local.service_accounts.load_balancer_controller
       externalSecrets        = local.service_accounts.external_secrets
       kyverno                = local.service_accounts.kyverno
+      keda                   = local.service_accounts.keda
+      trivyOperator          = local.service_accounts.trivy_operator
+      velero                 = local.service_accounts.velero
       alertmanager           = local.service_accounts.alertmanager
       grafana                = local.service_accounts.grafana
       api                    = local.service_accounts.api
@@ -39,6 +42,7 @@ locals {
     grafanaAdminSecretArn  = var.grafana_admin_secret_arn
     slackWebhookSecretName = var.slack_webhook_secret_name
     ciIdentity             = var.ci_identity
+    backupBucket           = module.backup_bucket.s3_bucket_id
 
     database = {
       host      = var.database.host

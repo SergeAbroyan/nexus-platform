@@ -24,7 +24,13 @@ locals {
     admin_logins = ["SergeAbroyan"]
   }
 
-  guardduty_enabled = false
+  guardduty_enabled    = false
+  security_hub_enabled = false
+
+  audit = {
+    retention_days = 365
+    force_destroy  = true
+  }
 
   dns_force_destroy         = true
   monthly_budget_amount_usd = 200

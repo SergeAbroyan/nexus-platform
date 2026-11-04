@@ -125,3 +125,24 @@ variable "guardduty_enabled" {
   default     = false
   nullable    = false
 }
+
+variable "audit" {
+  description = "How long CloudTrail and AWS Config logs are kept, and whether destroying global also deletes them."
+  type = object({
+    retention_days = number
+    force_destroy  = bool
+  })
+  nullable = false
+
+  validation {
+    condition     = var.audit.retention_days >= 90
+    error_message = "Keep audit logs for at least 90 days."
+  }
+}
+
+variable "security_hub_enabled" {
+  description = "Whether AWS Config records resources and Security Hub checks them against the AWS Foundational Security Best Practices and CIS standards in both regions."
+  type        = bool
+  default     = false
+  nullable    = false
+}

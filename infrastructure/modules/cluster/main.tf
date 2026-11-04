@@ -81,7 +81,8 @@ module "eks" {
     "eks-pod-identity-agent" = {
       before_compute = true
     }
-    "kube-proxy" = {}
+    "kube-proxy"          = {}
+    "snapshot-controller" = {}
     "vpc-cni" = {
       before_compute = true
     }

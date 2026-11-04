@@ -1,7 +1,8 @@
 data "aws_region" "current" {}
 
 locals {
-  guardduty_regions = var.guardduty_enabled ? toset([data.aws_region.current.region, var.standby_region]) : toset([])
+  account_regions   = toset([data.aws_region.current.region, var.standby_region])
+  guardduty_regions = var.guardduty_enabled ? local.account_regions : toset([])
 }
 
 resource "aws_guardduty_detector" "this" {

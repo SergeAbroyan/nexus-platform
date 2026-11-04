@@ -88,6 +88,12 @@ locals {
       kms_data_key_reuse_period_seconds = 300
     }
 
+    backup = {
+      schedule       = "cron(0 3 * * ? *)"
+      retention_days = 14
+      force_destroy  = true
+    }
+
     alarms = {
       period_seconds                       = 60
       evaluation_periods                   = 5
@@ -100,6 +106,7 @@ locals {
 
   platform = {
     load_balancer_deletion_protection = false
+    backup_bucket_force_destroy       = true
 
     gitops = {
       revision = "main"

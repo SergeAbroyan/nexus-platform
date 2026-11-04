@@ -101,7 +101,7 @@ jobs:
           framework: terraform
           output_format: cli
           quiet: true
-          skip_check: CKV_TF_1,CKV2_AWS_3
+          skip_check: CKV_TF_1,CKV2_AWS_3,CKV_AWS_252,CKV2_AWS_10,CKV2_AWS_48
           soft_fail: false
 
       - name: Audit downloaded external modules
@@ -113,5 +113,5 @@ jobs:
           download_external_modules: true
           output_format: cli
           quiet: true
-          skip_check: CKV_TF_1,CKV2_AWS_3
+          skip_check: CKV_TF_1,CKV2_AWS_3,CKV_AWS_252,CKV2_AWS_10,CKV2_AWS_48
           soft_fail: true

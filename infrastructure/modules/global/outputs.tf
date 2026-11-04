@@ -42,3 +42,8 @@ output "slack_webhook_secret_name" {
   description = "Secrets Manager secret, replicated to the standby region, that holds the Slack webhook URL for Alertmanager."
   value       = module.slack_webhook.secret_name
 }
+
+output "audit_bucket_name" {
+  description = "S3 bucket that holds the CloudTrail logs and, with Security Hub enabled, the AWS Config history."
+  value       = module.audit_logs.s3_bucket_id
+}

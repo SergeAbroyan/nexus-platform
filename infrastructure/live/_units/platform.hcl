@@ -114,6 +114,7 @@ inputs = {
   application_hostname              = "${local.environment.application_subdomain}.${local.account.domain_name}"
   ingress_port                      = local.environment.ingress_port
   load_balancer_deletion_protection = local.environment.platform.load_balancer_deletion_protection
+  backup_bucket_force_destroy       = local.environment.platform.backup_bucket_force_destroy
   argocd                            = local.environment.platform.argocd
 
   gitops = {

@@ -33,19 +33,26 @@ The switches are in each `environment.hcl`:
 
 ## Architecture
 
-```text
-                 Users
-                   │ HTTPS
-          CloudFront + WAF  (one distribution per environment)
-                   │ routes to the active region
-        ┌──────────┴───────────┐
-   us-east-1 (primary)    us-west-2 (standby, optional)
-   internal NLB           internal NLB
-   EKS + Istio + apps     EKS + Istio + apps
-   PostgreSQL writer ───► PostgreSQL cross-region read replica
-   Valkey, SQS            Valkey, SQS
-        │                      ▲
-   ECR (shared) ───────────────┘ image replication
+```mermaid
+flowchart TB
+  user(["Users"]) -->|HTTPS| cf["CloudFront + WAF<br/>one distribution per environment"]
+  cf -->|VPC origin, active region| nlb1
+  cf -.->|after failover| nlb2
+  subgraph primary["us-east-1 (primary)"]
+    nlb1["Internal NLB"] --> eks1["EKS: Istio gateway, Nexus API and worker,<br/>Argo CD, Karpenter, Kyverno, observability"]
+    eks1 --> rds1[("PostgreSQL writer")]
+    eks1 --> data1[("Valkey, SQS")]
+  end
+  subgraph standby["us-west-2 (standby, optional)"]
+    nlb2["Internal NLB"] --> eks2["EKS: same platform"]
+    eks2 --> rds2[("PostgreSQL read replica")]
+    eks2 --> data2[("Valkey, SQS")]
+  end
+  rds1 -->|continuous replication| rds2
+  ecr[("ECR: signed images")] -->|replication| standby
+  ecr --> primary
+  gh["GitHub: nexus-gitops"] -->|Argo CD pulls| eks1
+  gh --> eks2
 ```
 
 - CloudFront is the only public entry point. It reaches each region's internal
@@ -65,13 +72,14 @@ The switches are in each `environment.hcl`:
 infrastructure/
 ├── bootstrap/            One-time Terraform state bucket
 ├── modules/              Seven reusable Terraform modules
-│   ├── global/           GitHub CI roles, Route 53 zone, ECR and replication,
-│   │                     budget, shared secrets, optional GuardDuty
+│   ├── global/           GitHub CI roles, Route 53 zone, ECR and replication, budget,
+│   │                     shared secrets, CloudTrail, Access Analyzer, optional
+│   │                     GuardDuty and Security Hub
 │   ├── network/          VPC, subnets, NAT gateways, flow logs
 │   ├── security/         KMS keys, Grafana secret, regional alert topic
 │   ├── cluster/          EKS, managed system nodes, Karpenter AWS resources, FIS experiments
-│   ├── data/             PostgreSQL, Valkey, SQS, CloudWatch alarms
-│   ├── platform/         Pod Identity roles, ingress NLB, Argo CD and its seed objects
+│   ├── data/             PostgreSQL, Valkey, SQS, CloudWatch alarms, AWS Backup
+│   ├── platform/         Pod Identity roles, ingress NLB, Velero bucket, Argo CD and its seed objects
 │   └── edge/             CloudFront, WAF, TLS certificate, application DNS records
 └── live/
     ├── root.hcl          State backend, AWS provider, naming, region switch
@@ -91,7 +99,11 @@ infrastructure/
 └── infracost.yaml            Monthly cost change of every pull request
 renovate.json                 Dependency updates for modules, providers, tools, and actions
 .pre-commit-config.yaml       Local checks before every commit
+docs/adr/                     Architecture decision records
 ```
+
+The [architecture decision records](docs/adr/README.md) explain the main
+choices and the alternatives that were rejected.
 
 Each unit folder holds a small `terragrunt.hcl` that includes `root.hcl` and its
 definition in `_units/`, so every environment and region uses the same unit
@@ -164,6 +176,11 @@ Optional switches in `account.hcl`:
   `admin` account; see [Argo CD sign-in](#argo-cd-sign-in)
 - `guardduty_enabled`: GuardDuty threat detection with EKS audit log and EKS
   runtime monitoring in both regions
+- `security_hub_enabled`: AWS Config recording and Security Hub checks against
+  the AWS Foundational Security Best Practices and CIS benchmarks in both
+  regions; see [Account security](#account-security)
+- `audit`: how long CloudTrail logs are kept, and whether destroying `global`
+  deletes them
 
 ## Deployment
 
@@ -293,6 +310,40 @@ Limits: the Terraform state bucket and the CloudFront control plane are both in
 delayed. A production setup should replicate the state bucket to the standby
 region.
 
+## Backups and recovery
+
+Three layers protect data, each for a different failure:
+
+| Layer | What it protects | Where it lives |
+| --- | --- | --- |
+| RDS automated backups | Point-in-time restore of the database for `backup_retention_days` | RDS, same region |
+| AWS Backup | Daily recovery points plus continuous backup of the database, kept for `data.backup.retention_days`: 7 days in DEV, 14 in staging, 35 in production | The `<name>-database` vault, encrypted with the RDS key |
+| Velero | Kubernetes resources and volumes of the `nexus`, `cloudbeaver`, and `monitoring` namespaces, every night | The `<name>-velero-<account>` S3 bucket and EBS snapshots |
+
+The AWS Backup vault is separate from the database: deleting the instance or
+its automated backups leaves the vault's recovery points intact. In a standby
+region the vault exists only after the replica is promoted. The Velero bucket
+and snapshots stay in the cluster's region; the database replica covers the
+loss of a region. Restore procedures are rehearsed in the drills of
+`nexus-gitops`.
+
+## Account security
+
+`global` turns on account-wide controls in both regions:
+
+- **CloudTrail:** one multi-region trail records every management API call to
+  the `<name>-audit-<account>` bucket, encrypted with its own KMS key and with
+  log file validation, kept for `audit.retention_days`.
+- **IAM Access Analyzer:** reports any IAM role, KMS key, S3 bucket, or secret
+  that is shared outside the account.
+- **Cost Anomaly Detection:** AWS enables it by default with a daily email for
+  unusual spending, so Terraform does not create a second monitor; check it
+  under Billing → Cost Anomaly Detection.
+- **GuardDuty** (`guardduty_enabled`) and **Security Hub**
+  (`security_hub_enabled`) are off by default because they cost money. Security
+  Hub needs AWS Config, which records resources once a day to keep its cost
+  low; findings appear in the Security Hub console.
+
 ## Kubernetes platform
 
 The platform unit follows the GitOps Bridge pattern. It installs Argo CD and
@@ -318,9 +369,14 @@ environment, Region, cluster name, VPC, GitOps repository and revision,
 application hostname, ingress port and target group, ECR registry, EBS key,
 Karpenter node role and interruption queue, the alert topic, the Grafana
 password secret, the Slack webhook secret, the CI identity that signs images,
+the Velero backup bucket,
 the PostgreSQL, Valkey, and SQS connection settings, and the namespace and name
 of every service account that a Pod Identity role trusts.
-Terraform owns those service accounts, defined once at the top of
+Besides the Nexus services, Pod Identity roles exist for the AWS Load Balancer
+Controller, External Secrets, Alertmanager, Grafana, Kyverno and Trivy Operator
+(read the Nexus images), KEDA (read the queue depth), and Velero (write the
+backup bucket); each may do only what its add-on needs. Terraform owns those
+service accounts, defined once at the top of
 `modules/platform/identities.tf` and, for Karpenter, in `environment.hcl`; the
 add-ons that use them run in those namespaces. `values.schema.json` in the
 `bootstrap` chart is the contract for the facts, so a missing or mistyped fact
@@ -444,15 +500,19 @@ experiment. Run them in DEV or staging first.
 
 Rough monthly cost when running all the time:
 
-- `dev` as configured, one region and one zone: about $200–270 for EKS, one NAT
-  gateway, one system node, Karpenter nodes, single-AZ PostgreSQL and Valkey,
-  the load balancer, CloudFront, and WAF. Its nodes run on Spot, which is
-  roughly 60% cheaper than On-Demand; On-Demand nodes would add about $90–130
+- `dev` as configured, one region and one zone: about $280–330, or $65–75 a
+  week, for EKS, one NAT gateway, one system node and two Karpenter nodes,
+  single-AZ PostgreSQL and Valkey, the load balancer, CloudFront, WAF, KMS
+  keys, CloudWatch logs, and volumes. Its nodes run on Spot, which is roughly
+  60% cheaper than On-Demand; On-Demand nodes would add about $70–90
 - `staging` or `production` with both regions and three zones: about
   $1,000–1,500 or more, depending on instance sizes
 
 The account budget in `account.hcl` sends alerts at 50%, 80%, and 100% of the
-monthly amount. Destroy environments that are not in use.
+monthly amount. Destroy environments that are not in use; the hourly costs
+stop, while `global` keeps costing a few dollars a month for KMS keys, secrets,
+the hosted zone, and CloudTrail storage. Security Hub with AWS Config adds
+roughly $10–30 a month, and GuardDuty a few dollars.
 
 ### Cost estimates
 
@@ -489,6 +549,13 @@ Destroy an environment's standby region before setting
 `standby_enabled = false`, because a disabled region refuses `plan` and
 `apply`. Keep `global` while any environment exists.
 
+Backups follow the environment's settings: `backup_bucket_force_destroy` and
+`data.backup.force_destroy` are `true` in DEV and staging, so destroying them
+also deletes the Velero backups and the AWS Backup recovery points; in
+production they are kept and must be deleted on purpose. EBS snapshots that
+Velero took remain until their backup expires; delete leftovers in the EC2
+console under Snapshots.
+
 Destroying a cluster does not delete its persistent volume claims, so the EBS
 volumes behind them remain. In DEV the `nexus-gp3` StorageClass deletes a
 volume when its claim is deleted; in staging and production volumes are
@@ -501,9 +568,17 @@ console; each is tagged with the claim it served, in
 `.github/workflows/validate.yaml` runs on pull requests and pushes to `main`
 without AWS credentials. It checks Terraform and Terragrunt formatting,
 validates every Terragrunt unit and Terraform module, runs TFLint, and scans
-with Checkov. Checkov excludes `CKV_TF_1`, because the registry modules are
-pinned to exact versions, and `CKV2_AWS_3`, because GuardDuty is configured for
-a single account rather than an AWS Organization. A second, informational
+with Checkov. Checkov excludes five checks on purpose:
+
+- `CKV_TF_1`: registry modules are pinned to exact versions, not commit hashes.
+- `CKV2_AWS_3`: GuardDuty is configured for one account, not an AWS
+  Organization.
+- `CKV_AWS_252`: an SNS message for every CloudTrail log file adds noise
+  without value.
+- `CKV2_AWS_10`: CloudTrail logs stay in S3; copying them to CloudWatch Logs
+  would cost per gigabyte for the same data.
+- `CKV2_AWS_48`: AWS Config records global resources such as IAM in the
+  primary region only, as AWS recommends, to avoid duplicate records. A second, informational
 Checkov scan audits the downloaded external modules.
 
 Terraform plans are not run on pull requests: the EKS API accepts only the

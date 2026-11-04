@@ -141,8 +141,11 @@ resource "helm_release" "gitops_bootstrap" {
     module.api,
     module.external_secrets,
     module.grafana,
+    module.keda,
     module.kyverno,
     module.load_balancer_controller,
+    module.trivy_operator,
+    module.velero,
     module.worker,
   ]
 }
