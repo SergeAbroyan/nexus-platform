@@ -9,8 +9,6 @@ module "audit_key" {
   version = "4.2.2"
 
   description             = "${var.name} CloudTrail log encryption key"
-  key_usage               = "ENCRYPT_DECRYPT"
-  key_spec                = "SYMMETRIC_DEFAULT"
   enable_default_policy   = true
   enable_key_rotation     = true
   multi_region            = false
