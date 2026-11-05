@@ -128,7 +128,7 @@ locals {
 
       repository_server_resources = {
         requests = { cpu = "200m", memory = "512Mi" }
-        limits   = { cpu = "1", memory = "1Gi" }
+        limits   = { cpu = "1", memory = "1536Mi" }
       }
     }
   }

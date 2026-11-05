@@ -117,8 +117,8 @@ locals {
       secrets_revision = 1
 
       controller_resources = {
-        requests = { cpu = "100m", memory = "256Mi" }
-        limits   = { cpu = "500m", memory = "512Mi" }
+        requests = { cpu = "200m", memory = "512Mi" }
+        limits   = { cpu = "1", memory = "1536Mi" }
       }
 
       server_resources = {
@@ -127,8 +127,8 @@ locals {
       }
 
       repository_server_resources = {
-        requests = { cpu = "50m", memory = "128Mi" }
-        limits   = { cpu = "300m", memory = "256Mi" }
+        requests = { cpu = "100m", memory = "256Mi" }
+        limits   = { cpu = "1", memory = "1Gi" }
       }
     }
   }
