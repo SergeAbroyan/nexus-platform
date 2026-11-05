@@ -94,11 +94,13 @@ module "cache" {
     engine-log = {
       destination_type                       = "cloudwatch-logs"
       log_format                             = "json"
+      cloudwatch_log_group_name              = "${local.cache_name}/engine-log"
       cloudwatch_log_group_retention_in_days = var.cache.log_retention_days
     }
     slow-log = {
       destination_type                       = "cloudwatch-logs"
       log_format                             = "json"
+      cloudwatch_log_group_name              = "${local.cache_name}/slow-log"
       cloudwatch_log_group_retention_in_days = var.cache.log_retention_days
     }
   }
