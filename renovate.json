@@ -10,6 +10,15 @@
   "customManagers": [
     {
       "customType": "regex",
+      "description": "Gitleaks version used by the secret scan in CI",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.yaml$/"],
+      "matchStrings": ["GITLEAKS_VERSION: \"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "gitleaks/gitleaks",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
       "description": "Argo CD chart version in every environment",
       "managerFilePatterns": ["/^infrastructure/live/[^/]+/environment\\.hcl$/"],
       "matchStrings": [
