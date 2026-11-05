@@ -141,6 +141,14 @@ module "eks" {
   }
 
   node_security_group_additional_rules = {
+    istiod_webhook_from_control_plane = {
+      description                   = "Istio sidecar injection and validation webhooks called by the EKS control plane"
+      protocol                      = "tcp"
+      from_port                     = 15017
+      to_port                       = 15017
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
     ingress_gateway_from_vpc = {
       description = "Istio ingress gateway traffic from the internal load balancer"
       protocol    = "tcp"
