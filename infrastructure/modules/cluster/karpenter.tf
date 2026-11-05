@@ -1,3 +1,38 @@
+data "aws_iam_policy_document" "karpenter_node_volume_encryption" {
+  statement {
+    sid = "UseEncryptedNodeVolumes"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:Encrypt",
+      "kms:GenerateDataKeyWithoutPlaintext",
+      "kms:ReEncryptFrom",
+      "kms:ReEncryptTo",
+    ]
+    resources = [var.ebs_encryption_key_arn]
+  }
+
+  statement {
+    sid       = "CreateEncryptedNodeVolumeGrants"
+    actions   = ["kms:CreateGrant"]
+    resources = [var.ebs_encryption_key_arn]
+
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "karpenter_node_volume_encryption" {
+  name        = "${var.name}-karpenter-node-volume-encryption"
+  description = "Lets the Karpenter controller launch nodes with volumes encrypted by the ${var.name} EBS key"
+  policy      = data.aws_iam_policy_document.karpenter_node_volume_encryption.json
+
+  tags = var.tags
+}
+
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
   version = "21.29.0"
@@ -12,36 +47,16 @@ module "karpenter" {
   iam_role_use_name_prefix   = false
   iam_policy_name            = "${var.name}-karpenter-controller"
   iam_policy_use_name_prefix = false
+  enable_inline_policy       = true
 
   node_iam_role_name                     = "${var.name}-karpenter-node"
   node_iam_role_use_name_prefix          = false
   node_iam_role_source_account_condition = true
   node_iam_role_attach_cni_policy        = true
 
-  iam_policy_statements = [
-    {
-      sid = "UseEncryptedNodeVolumes"
-      actions = [
-        "kms:Decrypt",
-        "kms:DescribeKey",
-        "kms:Encrypt",
-        "kms:GenerateDataKeyWithoutPlaintext",
-        "kms:ReEncryptFrom",
-        "kms:ReEncryptTo",
-      ]
-      resources = [var.ebs_encryption_key_arn]
-    },
-    {
-      sid       = "CreateEncryptedNodeVolumeGrants"
-      actions   = ["kms:CreateGrant"]
-      resources = [var.ebs_encryption_key_arn]
-      condition = [{
-        test     = "Bool"
-        variable = "kms:GrantIsForAWSResource"
-        values   = ["true"]
-      }]
-    },
-  ]
+  iam_role_policies = {
+    node_volume_encryption = aws_iam_policy.karpenter_node_volume_encryption.arn
+  }
 
   enable_spot_termination   = var.karpenter.enable_spot_interruption
   queue_name                = "${var.name}-karpenter"
