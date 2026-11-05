@@ -83,6 +83,7 @@ infrastructure/
 │   └── edge/             CloudFront, WAF, TLS certificate, application DNS records
 └── live/
     ├── root.hcl          State backend, AWS provider, naming, region switch
+    ├── identity.hcl      Personal values: AWS account, domain, email, GitHub owner, administrators
     ├── account.hcl       Account-wide settings shared by every environment
     ├── _units/           One definition per unit type
     ├── global/           Account-wide unit, applied once
@@ -107,11 +108,16 @@ choices and the alternatives that were rejected.
 
 Each unit folder holds a small `terragrunt.hcl` that includes `root.hcl` and its
 definition in `_units/`, so every environment and region uses the same unit
-code. Settings live in three places:
+code. Settings live in four places:
 
-- `account.hcl`: AWS account, primary and standby regions, domain, alert email,
-  GitHub repositories, Argo CD GitHub sign-in, GuardDuty, budget, and container
-  registry
+- `identity.hcl`: every value that belongs to the owner rather than the
+  project: the AWS account ID, the domain, the alert email, the GitHub owner,
+  and the administrators' IAM users, GitHub logins, and IP ranges. Someone who
+  forks the project changes only this file.
+- `account.hcl`: project settings shared by every environment: regions,
+  repositories, Argo CD GitHub sign-in, GuardDuty, Security Hub, audit logs,
+  budget, and container registry. It reads its personal values from
+  `identity.hcl`.
 - `<environment>/environment.hcl`: the switches above and every sizing and
   retention setting of that environment
 - `<environment>/<region>/region.hcl`: the region's network ranges; each
@@ -150,25 +156,25 @@ Independent units run in parallel, and destroy uses the reverse order.
 - Terraform 1.11 or later (CI uses 1.17.0) and Terragrunt 1.1.5 or later (CI uses 1.2.1);
   `root.hcl` refuses older versions
 - AWS CLI, `curl`, and `kubectl` 1.35 to 1.37 for EKS 1.36
-- Credentials for the `aws_account_id` in `account.hcl`; the AWS provider
+- Credentials for the `aws_account_id` in `identity.hcl`; the AWS provider
   refuses to run against any other account
 - A domain that you own
 
 The cluster unit adds the public IP address of whoever runs Terragrunt to the
 EKS API allow list, detected with `https://checkip.amazonaws.com`. Put stable
-administrator CIDRs in `cluster.public_access_cidrs` so that an apply from CI
+administrator CIDRs in `administrators.cidrs` in `identity.hcl` so that an apply from CI
 does not remove your own access.
 
 ## Configuration
 
 Before the first deployment set:
 
-- `domain_name` in `account.hcl`; each environment is served at
-  `<application_subdomain>.<domain_name>`, for example `nexus-dev.example.com`
-- `cluster.public_access_cidrs` in the environment you deploy, for example
-  `["203.0.113.10/32"]`
-- `alert_email_address` and `monthly_budget_amount_usd` in `account.hcl` if
-  needed
+- in `identity.hcl`: `domain_name`, so each environment is served at
+  `<application_subdomain>.<domain_name>`, for example `nexus-dev.example.com`;
+  `administrators.cidrs`, for example `["203.0.113.10/32"]`; and check
+  `aws_account_id`, `alert_email_address`, `github_owner`, and the
+  administrators' IAM users and GitHub logins
+- `monthly_budget_amount_usd` in `account.hcl` if needed
 
 Optional switches in `account.hcl`:
 
@@ -188,7 +194,7 @@ Move the bootstrap state into the existing state bucket once:
 
 ```bash
 terraform -chdir=infrastructure/bootstrap init -migrate-state \
-  -backend-config="bucket=nexus-terraform-state-123456789012" \
+  -backend-config="bucket=nexus-terraform-state-$(aws sts get-caller-identity --query Account --output text)" \
   -backend-config="key=bootstrap/terraform.tfstate" \
   -backend-config="region=us-east-1" \
   -backend-config="encrypt=true" \
@@ -415,8 +421,9 @@ To sign in with GitHub instead:
      --secret-string '<client secret>'
    ```
 
-3. In `account.hcl`, set `argocd_github_sso.enabled = true`, the app's
-   `client_id`, and the GitHub logins in `admin_logins`, then apply the
+3. In `account.hcl`, set `argocd_github_sso.enabled = true` and the app's
+   `client_id`; the administrators are `administrators.github_logins` in
+   `identity.hcl`. Then apply the
    platform unit.
 
 Terraform then enables Dex with a GitHub connector, gives the listed logins the

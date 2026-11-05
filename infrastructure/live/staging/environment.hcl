@@ -33,8 +33,6 @@ locals {
 
   cluster = {
     kubernetes_version               = "1.36"
-    admin_user_names                 = ["your-iam-user"]
-    public_access_cidrs              = []
     deletion_protection              = false
     control_plane_log_retention_days = 14
 

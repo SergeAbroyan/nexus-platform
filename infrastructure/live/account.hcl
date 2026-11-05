@@ -1,17 +1,20 @@
 locals {
+  identity = read_terragrunt_config("${get_terragrunt_dir()}/identity.hcl").locals
+
   project_name   = "nexus"
-  aws_account_id = "123456789012"
+  aws_account_id = local.identity.aws_account_id
 
   primary_region = "us-east-1"
   standby_region = "us-west-2"
 
-  domain_name         = ""
-  alert_email_address = "alerts@example.com"
+  domain_name         = local.identity.domain_name
+  alert_email_address = local.identity.alert_email_address
+  administrators      = local.identity.administrators
 
   environments = ["dev", "staging", "production"]
 
   github = {
-    owner                     = "SergeAbroyan"
+    owner                     = local.identity.github_owner
     infrastructure_repository = "nexus-platform"
     applications_repository   = "nexus-applications"
     gitops_repository         = "nexus-gitops"
@@ -21,7 +24,7 @@ locals {
   argocd_github_sso = {
     enabled      = false
     client_id    = ""
-    admin_logins = ["SergeAbroyan"]
+    admin_logins = local.identity.administrators.github_logins
   }
 
   guardduty_enabled    = false

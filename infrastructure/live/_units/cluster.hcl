@@ -33,10 +33,10 @@ inputs = {
   ebs_encryption_key_arn     = dependency.security.outputs.kms_key_arns["ebs"]
 
   admin_principal_arns = concat(
-    [for user_name in local.cluster.admin_user_names : "arn:aws:iam::${local.account.aws_account_id}:user/${user_name}"],
+    [for user_name in local.account.administrators.iam_user_names : "arn:aws:iam::${local.account.aws_account_id}:user/${user_name}"],
     [dependency.global.outputs.infrastructure_ci_role_arns[local.environment.environment]],
   )
-  endpoint_public_access_cidrs = distinct(concat(local.cluster.public_access_cidrs, [local.operator_cidr]))
+  endpoint_public_access_cidrs = distinct(concat(local.account.administrators.cidrs, [local.operator_cidr]))
 
   deletion_protection              = local.cluster.deletion_protection
   control_plane_log_retention_days = local.cluster.control_plane_log_retention_days
