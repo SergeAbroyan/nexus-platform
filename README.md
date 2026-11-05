@@ -209,11 +209,14 @@ terragrunt apply
 terragrunt output name_servers
 ```
 
-Set those four name servers at your registrar. If the domain is registered with
-Route 53, AWS created its own hosted zone for it; point the domain at the name
-servers above and delete that extra zone. Wait until `dig NS <domain>` returns
-the new name servers, because the CloudFront certificate is validated through
-this zone.
+With `domain_registered_with_route53 = true` in `identity.hcl`, the apply
+also points the domain at the new zone's name servers, and keeps them in step if
+the zone is ever recreated. When Route 53 registered the domain, it created a
+hosted zone of its own that is now unused; delete it once in the Route 53
+console, or with `aws route53 delete-hosted-zone --id <its ID>`. For a domain
+registered elsewhere, set the flag to `false` and enter the four name servers at
+your registrar. Wait until `dig NS <domain>` returns the new name servers,
+because the CloudFront certificate is validated through this zone.
 
 Give Argo CD read access to `nexus-gitops`. Create a key pair, store the
 private key in the secret that `global` created, and delete the local copy:

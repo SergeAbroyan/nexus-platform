@@ -7,9 +7,10 @@ locals {
   primary_region = "us-east-1"
   standby_region = "us-west-2"
 
-  domain_name         = local.identity.domain_name
-  alert_email_address = local.identity.alert_email_address
-  administrators      = local.identity.administrators
+  domain_name                    = local.identity.domain_name
+  domain_registered_with_route53 = local.identity.domain_registered_with_route53
+  alert_email_address            = local.identity.alert_email_address
+  administrators                 = local.identity.administrators
 
   environments = ["dev", "staging", "production"]
 
@@ -36,7 +37,7 @@ locals {
   }
 
   dns_force_destroy         = true
-  monthly_budget_amount_usd = 200
+  monthly_budget_amount_usd = 100
 
   ecr = {
     repository_names    = ["api", "worker"]

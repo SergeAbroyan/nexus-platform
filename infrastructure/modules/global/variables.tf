@@ -38,6 +38,13 @@ variable "domain_name" {
   }
 }
 
+variable "domain_registered_with_route53" {
+  description = "Whether the domain is registered with Route 53 in this account, so Terraform points its name servers at the hosted zone."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "dns_force_destroy" {
   description = "Whether the hosted zone may be destroyed while it still contains records."
   type        = bool
