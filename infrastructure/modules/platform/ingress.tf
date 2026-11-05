@@ -21,7 +21,7 @@ module "ingress_load_balancer" {
   security_group_name = "${var.name}-ingress"
   security_group_ingress_rules = {
     origin_from_cloudfront = {
-      description    = "CloudFront VPC origin traffic, which arrives from CloudFront's origin-facing addresses"
+      description    = "CloudFront VPC origin traffic from the CloudFront origin-facing addresses"
       from_port      = local.origin_port
       to_port        = local.origin_port
       ip_protocol    = "tcp"
