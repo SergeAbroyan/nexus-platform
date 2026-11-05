@@ -19,7 +19,7 @@ locals {
   }
 
   security = {
-    secret_recovery_window_in_days = 7
+    secret_recovery_window_in_days = 0
 
     kms = {
       key_names               = ["ebs", "eks", "rds", "secrets", "sns", "sqs", "valkey"]

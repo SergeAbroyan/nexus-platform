@@ -537,15 +537,23 @@ skips the estimate.
 
 ## Destroying
 
-Karpenter nodes and Kubernetes volumes are not Terraform resources. Remove them
-in each deployed region first, or they keep running and block VPC deletion:
+Karpenter nodes and Kubernetes volumes are not Terraform resources. Remove the
+nodes in each deployed region first, or they keep running and block VPC
+deletion. Stop the Argo CD application controller first, because self-healing
+would recreate the node pools. Release the Application finalizers while the
+cluster is still complete, so Terraform can uninstall Argo CD without its
+controller. Remove the disruption budgets, so a single-replica workload cannot
+hold a node for the full termination grace period:
 
 ```bash
+kubectl scale statefulset argocd-application-controller -n argocd --replicas=0
+kubectl get applications -n argocd -o name | xargs -I{} kubectl patch {} -n argocd --type merge -p '{"metadata":{"finalizers":null}}'
+kubectl delete pdb --all --all-namespaces
 kubectl delete nodepools --all
-kubectl get nodeclaims
+kubectl wait nodeclaims --all --for=delete --timeout=15m
 ```
 
-Wait until no node claims remain, then destroy the environment:
+Then destroy the environment:
 
 ```bash
 cd infrastructure/live/dev
@@ -572,9 +580,19 @@ console under Snapshots.
 Destroying a cluster does not delete its persistent volume claims, so the EBS
 volumes behind them remain. In DEV the `nexus-gp3` StorageClass deletes a
 volume when its claim is deleted; in staging and production volumes are
-retained even then. After a teardown, delete leftover volumes in the EC2
-console; each is tagged with the claim it served, in
-`kubernetes.io/created-for/pvc/name`.
+retained even then. After a teardown, delete the leftover volumes; each is
+tagged with the claim it served, in `kubernetes.io/created-for/pvc/name`:
+
+```bash
+aws ec2 describe-volumes --region us-east-1 \
+  --filters Name=tag-key,Values=kubernetes.io/created-for/pvc/name Name=status,Values=available \
+  --query 'Volumes[].VolumeId' --output text | xargs -n1 aws ec2 delete-volume --region us-east-1 --volume-id
+```
+
+DEV deletes its secrets immediately (`secret_recovery_window_in_days = 0`), so
+it can be destroyed every evening and recreated the next day; AWS refuses to
+create a secret whose name is still inside a recovery window. Staging and
+production keep a recovery window.
 
 ## Continuous validation and deployment
 

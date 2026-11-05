@@ -43,13 +43,13 @@ variable "kms" {
 }
 
 variable "secret_recovery_window_in_days" {
-  description = "Days AWS retains a deleted platform secret before permanent removal."
+  description = "Days AWS retains a deleted platform secret before permanent removal; 0 deletes it immediately so the name can be reused."
   type        = number
   nullable    = false
 
   validation {
-    condition     = var.secret_recovery_window_in_days >= 7 && var.secret_recovery_window_in_days <= 30
-    error_message = "The secret recovery window must be between 7 and 30 days."
+    condition     = var.secret_recovery_window_in_days == 0 || (var.secret_recovery_window_in_days >= 7 && var.secret_recovery_window_in_days <= 30)
+    error_message = "The secret recovery window must be 0 for immediate deletion, or between 7 and 30 days."
   }
 }
 
