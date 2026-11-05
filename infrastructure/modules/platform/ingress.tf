@@ -1,3 +1,7 @@
+locals {
+  origin_port = 80
+}
+
 module "ingress_load_balancer" {
   source  = "terraform-aws-modules/alb/aws"
   version = "10.5.1"
@@ -14,8 +18,8 @@ module "ingress_load_balancer" {
   security_group_ingress_rules = {
     origin_from_vpc = {
       description = "CloudFront VPC origin traffic"
-      from_port   = 443
-      to_port     = 443
+      from_port   = local.origin_port
+      to_port     = local.origin_port
       ip_protocol = "tcp"
       cidr_ipv4   = var.vpc_cidr_block
     }
@@ -32,7 +36,7 @@ module "ingress_load_balancer" {
 
   listeners = {
     origin = {
-      port     = 443
+      port     = local.origin_port
       protocol = "TCP"
       forward = {
         target_group_key = "gateway"

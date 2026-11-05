@@ -107,7 +107,7 @@ module "cloudfront" {
   vpc_origin = {
     for region, origin in var.origins : region => {
       arn                    = origin.load_balancer_arn
-      http_port              = 443
+      http_port              = origin.http_port
       https_port             = 443
       name                   = "${var.name}-${region}"
       origin_protocol_policy = "http-only"

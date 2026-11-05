@@ -32,10 +32,12 @@ inputs = {
       (local.account.primary_region) = {
         load_balancer_arn = dependency.primary_platform.outputs.ingress_load_balancer_arn
         domain_name       = dependency.primary_platform.outputs.ingress_load_balancer_dns_name
+        http_port         = dependency.primary_platform.outputs.ingress_origin_port
       }
       (local.account.standby_region) = local.environment.standby_enabled ? {
         load_balancer_arn = dependency.standby_platform.outputs.ingress_load_balancer_arn
         domain_name       = dependency.standby_platform.outputs.ingress_load_balancer_dns_name
+        http_port         = dependency.standby_platform.outputs.ingress_origin_port
       } : null
     } : region => origin if origin != null
   }

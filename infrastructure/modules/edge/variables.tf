@@ -51,10 +51,11 @@ variable "hostname" {
 }
 
 variable "origins" {
-  description = "Internal ingress load balancer of each region, keyed by region name."
+  description = "Internal ingress load balancer of each region and the port it receives HTTP on, keyed by region name."
   type = map(object({
     load_balancer_arn = string
     domain_name       = string
+    http_port         = number
   }))
   nullable = false
 

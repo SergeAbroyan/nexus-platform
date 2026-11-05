@@ -3,6 +3,11 @@ output "ingress_load_balancer_arn" {
   value       = module.ingress_load_balancer.arn
 }
 
+output "ingress_origin_port" {
+  description = "Port on which the internal load balancer receives plain HTTP from the CloudFront VPC origin."
+  value       = local.origin_port
+}
+
 output "ingress_load_balancer_dns_name" {
   description = "DNS name of the internal ingress load balancer."
   value       = module.ingress_load_balancer.dns_name
