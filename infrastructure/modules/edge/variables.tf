@@ -40,9 +40,14 @@ variable "zone_name" {
 }
 
 variable "hostname" {
-  description = "Public application hostname served by CloudFront."
+  description = "Public application hostname served by CloudFront; a name inside zone_name."
   type        = string
   nullable    = false
+
+  validation {
+    condition     = endswith(var.hostname, ".${var.zone_name}")
+    error_message = "The hostname must be a subdomain of zone_name, such as nexus-dev.example.com in example.com."
+  }
 
   validation {
     condition     = can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.hostname))

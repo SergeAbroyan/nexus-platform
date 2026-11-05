@@ -191,6 +191,10 @@ module "cloudfront" {
   tags = var.tags
 }
 
+locals {
+  record_name = trimsuffix(var.hostname, ".${var.zone_name}")
+}
+
 module "dns_records" {
   source  = "terraform-aws-modules/route53/aws"
   version = "6.5.1"
@@ -200,7 +204,7 @@ module "dns_records" {
 
   records = {
     application_ipv4 = {
-      name = var.hostname
+      name = local.record_name
       type = "A"
       alias = {
         name                   = module.cloudfront.cloudfront_distribution_domain_name
@@ -209,7 +213,7 @@ module "dns_records" {
       }
     }
     application_ipv6 = {
-      name = var.hostname
+      name = local.record_name
       type = "AAAA"
       alias = {
         name                   = module.cloudfront.cloudfront_distribution_domain_name
