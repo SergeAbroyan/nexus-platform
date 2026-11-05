@@ -2,6 +2,10 @@ locals {
   origin_port = 80
 }
 
+data "aws_ec2_managed_prefix_list" "cloudfront_origin_facing" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 module "ingress_load_balancer" {
   source  = "terraform-aws-modules/alb/aws"
   version = "10.5.1"
@@ -16,12 +20,12 @@ module "ingress_load_balancer" {
 
   security_group_name = "${var.name}-ingress"
   security_group_ingress_rules = {
-    origin_from_vpc = {
-      description = "CloudFront VPC origin traffic"
-      from_port   = local.origin_port
-      to_port     = local.origin_port
-      ip_protocol = "tcp"
-      cidr_ipv4   = var.vpc_cidr_block
+    origin_from_cloudfront = {
+      description    = "CloudFront VPC origin traffic, which arrives from CloudFront's origin-facing addresses"
+      from_port      = local.origin_port
+      to_port        = local.origin_port
+      ip_protocol    = "tcp"
+      prefix_list_id = data.aws_ec2_managed_prefix_list.cloudfront_origin_facing.id
     }
   }
   security_group_egress_rules = {
