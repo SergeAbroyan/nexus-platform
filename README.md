@@ -111,8 +111,11 @@ definition in `_units/`, so every environment and region uses the same unit
 code. Settings live in four places:
 
 - `identity.hcl`: every value that belongs to the owner rather than the
-  project: the AWS account ID, the domain, the alert email, the GitHub owner,
-  and the administrators' IAM users, GitHub logins, and IP ranges. Someone who
+  project: the AWS account ID, the domain, the alert email, the GitHub owner
+  and its permanent numeric ID, and the administrators' IAM users, GitHub
+  logins, and IP ranges. GitHub now identifies workflow runs to AWS by that
+  ID as well as the name, so the CI roles trust both forms; find the ID with
+  `curl https://api.github.com/users/<owner>`. Someone who
   forks the project changes only this file.
 - `account.hcl`: project settings shared by every environment: regions,
   repositories, Argo CD GitHub sign-in, GuardDuty, Security Hub, audit logs,

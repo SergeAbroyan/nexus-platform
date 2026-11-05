@@ -16,6 +16,7 @@ locals {
 
   github = {
     owner                     = local.identity.github_owner
+    owner_id                  = local.identity.github_owner_id
     infrastructure_repository = "nexus-platform"
     applications_repository   = "nexus-applications"
     gitops_repository         = "nexus-gitops"

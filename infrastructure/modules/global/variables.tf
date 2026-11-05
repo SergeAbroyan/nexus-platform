@@ -64,9 +64,10 @@ variable "environments" {
 }
 
 variable "github" {
-  description = "GitHub owner, repositories, and the branch trusted by the CI roles."
+  description = "GitHub owner, its permanent numeric ID, the repositories, and the branch trusted by the CI roles."
   type = object({
     owner                     = string
+    owner_id                  = string
     infrastructure_repository = string
     applications_repository   = string
     gitops_repository         = string

@@ -24,8 +24,9 @@ module "application_ci" {
   description     = "GitHub Actions role for publishing Nexus application images"
 
   enable_github_oidc = true
-  oidc_subjects = [
+  oidc_wildcard_subjects = [
     "${var.github.owner}/${var.github.applications_repository}:ref:refs/heads/${var.github.deployment_branch}",
+    "${var.github.owner}@${var.github.owner_id}/${var.github.applications_repository}@*:ref:refs/heads/${var.github.deployment_branch}",
   ]
 
   create_inline_policy = true
@@ -65,8 +66,9 @@ module "infrastructure_ci" {
   description     = "GitHub Actions role for deploying the Nexus ${each.key} infrastructure"
 
   enable_github_oidc = true
-  oidc_subjects = [
+  oidc_wildcard_subjects = [
     "${var.github.owner}/${var.github.infrastructure_repository}:environment:${each.key}",
+    "${var.github.owner}@${var.github.owner_id}/${var.github.infrastructure_repository}@*:environment:${each.key}",
   ]
 
   create_inline_policy = true
