@@ -551,7 +551,11 @@ kubectl get applications -n argocd -o name | xargs -I{} kubectl patch {} -n argo
 kubectl delete pdb --all --all-namespaces
 kubectl delete nodepools --all
 kubectl wait nodeclaims --all --for=delete --timeout=15m
+kubectl delete ec2nodeclasses --all
 ```
+
+Deleting the node classes last lets Karpenter remove the IAM instance profiles
+it created for them; otherwise they outlive the cluster.
 
 Then destroy the environment:
 
