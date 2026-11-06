@@ -20,7 +20,7 @@ locals {
 
   values = {
     global = {
-      domain = "argocd.nexus.local"
+      domain = try(var.admin_access.hostnames.argocd, "argocd.nexus.local")
     }
     configs = {
       params = {

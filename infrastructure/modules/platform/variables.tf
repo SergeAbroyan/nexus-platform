@@ -264,3 +264,13 @@ variable "gitops" {
     error_message = "The GitOps repository must be an SSH URL such as git@github.com:owner/repository.git, and the revision cannot be empty."
   }
 }
+
+variable "admin_access" {
+  description = "Cloudflare Tunnel for this environment's admin tools: the Secrets Manager secret that holds its token and the public address of each tool, or null when admin tools are reached only with kubectl port-forward."
+  type = object({
+    tunnel_id                = string
+    tunnel_token_secret_name = string
+    hostnames                = map(string)
+  })
+  default = null
+}

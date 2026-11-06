@@ -225,3 +225,27 @@ module "dns_records" {
 
   tags = var.tags
 }
+
+resource "cloudflare_dns_record" "certificate_validation" {
+  for_each = var.cloudflare_zone_id == null ? toset([]) : toset([var.hostname])
+
+  zone_id = var.cloudflare_zone_id
+  name    = trimsuffix(one([for option in module.certificate.acm_certificate_domain_validation_options : option.resource_record_name if option.domain_name == each.key]), ".")
+  type    = "CNAME"
+  content = trimsuffix(one([for option in module.certificate.acm_certificate_domain_validation_options : option.resource_record_value if option.domain_name == each.key]), ".")
+  proxied = false
+  ttl     = 300
+  comment = "ACM validation for the ${each.key} CloudFront certificate"
+}
+
+resource "cloudflare_dns_record" "application" {
+  count = var.cloudflare_zone_id == null ? 0 : 1
+
+  zone_id = var.cloudflare_zone_id
+  name    = var.hostname
+  type    = "CNAME"
+  content = module.cloudfront.cloudfront_distribution_domain_name
+  proxied = false
+  ttl     = 300
+  comment = "Application edge served by CloudFront"
+}

@@ -39,6 +39,12 @@ variable "zone_name" {
   nullable    = false
 }
 
+variable "cloudflare_zone_id" {
+  description = "Cloudflare zone of the same domain that also receives the certificate validation and application records, or null when DNS stays on Route 53 only."
+  type        = string
+  default     = null
+}
+
 variable "hostname" {
   description = "Public application hostname served by CloudFront; a name inside zone_name."
   type        = string

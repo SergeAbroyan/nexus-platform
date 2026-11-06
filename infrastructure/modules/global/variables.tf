@@ -154,3 +154,43 @@ variable "security_hub_enabled" {
   default     = false
   nullable    = false
 }
+
+variable "cloudflare" {
+  description = "Cloudflare account that hosts the public DNS zone and the Zero Trust sign-in for admin tools, or null to keep DNS on Route 53 only. dns_authoritative points the registrar at Cloudflare."
+  type = object({
+    account_id        = string
+    access_team       = string
+    access_emails     = list(string)
+    dns_authoritative = bool
+  })
+  default = null
+
+  validation {
+    condition = var.cloudflare == null ? true : (
+      can(regex("^[0-9a-f]{32}$", var.cloudflare.account_id)) &&
+      can(regex("^[a-z0-9][a-z0-9-]*$", var.cloudflare.access_team)) &&
+      length(var.cloudflare.access_emails) > 0 &&
+      alltrue([for email in var.cloudflare.access_emails : can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", email))])
+    )
+    error_message = "Set cloudflare in identity.hcl: the 32-character account ID, the Zero Trust team name, and at least one valid sign-in email address."
+  }
+}
+
+variable "admin_access" {
+  description = "Environments whose admin tools are published through a Cloudflare Tunnel behind Cloudflare Access, how long a sign-in lasts, and the in-cluster address of each tool."
+  type = object({
+    environments     = set(string)
+    session_duration = string
+    tools            = map(string)
+  })
+  nullable = false
+
+  validation {
+    condition = (
+      alltrue([for environment in var.admin_access.environments : can(regex("^[a-z][a-z0-9-]*$", environment))]) &&
+      can(regex("^[0-9]+(m|h)$", var.admin_access.session_duration)) &&
+      alltrue([for tool, address in var.admin_access.tools : can(regex("^[a-z][a-z0-9-]*$", tool)) && can(regex("^http://[a-z0-9.-]+:[0-9]+$", address))])
+    )
+    error_message = "Admin access needs lowercase environment and tool names, a session duration such as 24h, and an http://<service>:<port> address for each tool."
+  }
+}

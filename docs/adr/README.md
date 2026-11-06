@@ -15,3 +15,4 @@ supersedes the old one.
 | [0007](0007-alerts-without-a-paging-service.md) | Alerts go to email and Slack, without a paging service |
 | [0008](0008-signatures-as-oci-referrers.md) | Image signatures are stored as OCI referrers in ECR |
 | [0009](0009-layered-backups.md) | Data is protected by RDS backups, AWS Backup, and Velero |
+| [0010](0010-admin-access-through-cloudflare.md) | Admin tools are published through Cloudflare Tunnel behind Cloudflare Access |

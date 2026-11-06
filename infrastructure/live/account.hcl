@@ -23,6 +23,25 @@ locals {
     deployment_branch         = "main"
   }
 
+  cloudflare = local.identity.cloudflare.account_id == "" ? null : local.identity.cloudflare
+
+  admin_access = {
+    environments     = ["dev"]
+    session_duration = "24h"
+
+    tools = {
+      argocd       = "http://argocd-server.argocd.svc.cluster.local:80"
+      grafana      = "http://monitoring-grafana.monitoring.svc.cluster.local:80"
+      prometheus   = "http://monitoring-prometheus.monitoring.svc.cluster.local:9090"
+      alertmanager = "http://monitoring-alertmanager.monitoring.svc.cluster.local:9093"
+      goldilocks   = "http://goldilocks-dashboard.goldilocks.svc.cluster.local:80"
+      policies     = "http://policy-reporter-ui.policy-reporter.svc.cluster.local:8080"
+      opencost     = "http://opencost.opencost.svc.cluster.local:9090"
+      cloudbeaver  = "http://cloudbeaver.cloudbeaver.svc.cluster.local:8978"
+      pyroscope    = "http://pyroscope.monitoring.svc.cluster.local:4040"
+    }
+  }
+
   argocd_github_sso = {
     enabled      = false
     client_id    = ""

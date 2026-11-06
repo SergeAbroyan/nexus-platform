@@ -21,11 +21,12 @@ dependency "standby_platform" {
 }
 
 inputs = {
-  region        = local.account.primary_region
-  zone_id       = dependency.global.outputs.zone_id
-  zone_name     = local.account.domain_name
-  hostname      = "${local.environment.application_subdomain}.${local.account.domain_name}"
-  active_region = local.environment.active_region
+  region             = local.account.primary_region
+  zone_id            = dependency.global.outputs.zone_id
+  zone_name          = local.account.domain_name
+  cloudflare_zone_id = try(dependency.global.outputs.cloudflare_zone_id, null)
+  hostname           = "${local.environment.application_subdomain}.${local.account.domain_name}"
+  active_region      = local.environment.active_region
 
   origins = {
     for region, origin in {

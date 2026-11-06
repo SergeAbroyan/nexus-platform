@@ -62,8 +62,12 @@ jobs:
 
       - name: Plan infrastructure
         if: inputs.operation == 'plan'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: terragrunt run --all plan --non-interactive --working-dir "infrastructure/live/${{ inputs.environment }}"
 
       - name: Apply infrastructure
         if: inputs.operation == 'apply'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: terragrunt run --all apply --non-interactive --working-dir "infrastructure/live/${{ inputs.environment }}"

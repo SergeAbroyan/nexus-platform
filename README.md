@@ -74,13 +74,14 @@ infrastructure/
 ├── modules/              Seven reusable Terraform modules
 │   ├── global/           GitHub CI roles, Route 53 zone, ECR and replication, budget,
 │   │                     shared secrets, CloudTrail, Access Analyzer, optional
-│   │                     GuardDuty and Security Hub
+│   │                     GuardDuty, Security Hub, and Cloudflare DNS, Tunnel and Access
 │   ├── network/          VPC, subnets, NAT gateways, S3 gateway endpoint, flow logs
 │   ├── security/         KMS keys, Grafana secret, regional alert topic
 │   ├── cluster/          EKS, managed system nodes, Karpenter AWS resources, FIS experiments
 │   ├── data/             PostgreSQL, Valkey, SQS, CloudWatch alarms, AWS Backup
 │   ├── platform/         Pod Identity roles, ingress NLB, Velero bucket, Argo CD and its seed objects
 │   └── edge/             CloudFront, WAF, TLS certificate, application DNS records
+│                         in Route 53 and, when configured, Cloudflare
 └── live/
     ├── root.hcl          State backend, AWS provider, naming, region switch
     ├── identity.hcl      Personal values: AWS account, domain, email, GitHub owner, administrators
@@ -179,7 +180,14 @@ Before the first deployment set:
   administrators' IAM users and GitHub logins
 - `monthly_budget_amount_usd` in `account.hcl` if needed
 
-Optional switches in `account.hcl`:
+Optional switches:
+
+- `cloudflare` in `identity.hcl`: serve the domain from Cloudflare and publish
+  the admin tools at `<tool>-<environment>.<domain_name>` behind Cloudflare
+  Access; see [Admin tools](#admin-tools). Leave `account_id` empty to keep DNS
+  on Route 53 and reach the tools with `kubectl port-forward`.
+
+In `account.hcl`:
 
 - `argocd_github_sso`: sign in to Argo CD with GitHub instead of the local
   `admin` account; see [Argo CD sign-in](#argo-cd-sign-in)
@@ -406,12 +414,84 @@ Argo CD exposes metrics for its application controller, API server, and
 repository server, and the monitoring stack in `nexus-gitops` scrapes them and
 alerts when an Application stays degraded or out of sync or fails to sync.
 
+### Admin tools
+
+No admin tool has a public endpoint or an inbound port. Without Cloudflare,
+reach each one with `kubectl port-forward`, for example
+`kubectl port-forward -n argocd svc/argocd-server 8080:80`.
+
+With Cloudflare configured, `cloudflared` runs in the `cloudflared` namespace
+and opens outbound connections to Cloudflare. Each tool in
+`admin_access.tools` in `account.hcl` gets the address
+`https://<tool>-<environment>.<domain_name>`, for example
+`https://argocd-dev.example.com`, and Cloudflare Access asks for a one-time
+code sent to an address in `cloudflare.access_emails` before the tool loads.
+`cloudflared` also checks the Access token on every request, so traffic that
+did not pass Access is refused even if the Access application is changed or
+deleted. The tools keep their own sign-in behind that. See
+[ADR 0010](docs/adr/0010-admin-access-through-cloudflare.md).
+
+Cloudflare Access protects only names in a zone that Cloudflare serves, so the
+whole domain moves from Route 53 to Cloudflare. The website keeps running on
+CloudFront; Cloudflare only answers its DNS queries. The move takes two applies
+so that both DNS services hold the same records before the switch:
+
+1. Create a free Cloudflare account. Under Zero Trust choose a team name and the
+   Free plan, and check that One-time PIN is listed under Settings →
+   Authentication → Login methods.
+2. Create an API token under My Profile → API Tokens with Account → Cloudflare
+   Tunnel: Edit, Account → Access: Apps and Policies: Edit, Zone → Zone: Edit
+   and Zone → DNS: Edit for all zones of the account. Load it without saving it
+   in your shell history, and store the same value as the `CLOUDFLARE_API_TOKEN`
+   secret of each GitHub environment, which the deploy workflow passes to
+   Terragrunt:
+
+   ```bash
+   read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN
+   ```
+
+3. In `identity.hcl`, set `cloudflare.account_id` and `cloudflare.access_team`,
+   keep `dns_authoritative = false`, and apply `live/global`. Cloudflare now
+   holds the zone, the tunnel for each environment in
+   `admin_access.environments`, the Access applications, and their DNS names,
+   while Route 53 still answers for the domain.
+4. Copy each tunnel's token into its Secrets Manager secret. The pipe passes it
+   from Cloudflare to AWS without printing it:
+
+   ```bash
+   cd infrastructure/live/global
+   ACCOUNT_ID=<cloudflare account ID>
+   TUNNEL_ID=$(terragrunt output -json admin_access | jq -r '.dev.tunnel_id')
+   curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+     "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunnel/$TUNNEL_ID/token" \
+     | jq -j .result \
+     | aws secretsmanager put-secret-value --region us-east-1 \
+         --secret-id nexus/cloudflare/dev-tunnel-token --secret-string file:///dev/stdin
+   ```
+
+5. Apply the environment, for example `terragrunt run --all apply` in
+   `live/dev`. The edge unit copies the application and certificate validation
+   records into Cloudflare, and the platform unit lets External Secrets read the
+   token and tells Argo CD to deploy `cloudflared`.
+6. Check that Cloudflare answers like Route 53, using one of the name servers in
+   `terragrunt output cloudflare_name_servers`:
+
+   ```bash
+   dig +short nexus-dev.example.com @<cloudflare name server>
+   ```
+
+7. Set `dns_authoritative = true` and apply `live/global` again. The domain
+   now points at Cloudflare's name servers; resolvers move over within 48 hours,
+   and Cloudflare marks the zone active once it sees the change.
+
+The tunnel and its token live in `global`, so destroying and recreating an
+environment keeps both. Rotating a token means running step 4 again and
+restarting `cloudflared`.
+
 ### Argo CD sign-in
 
-Argo CD has no public endpoint; reach it with
-`kubectl port-forward -n argocd svc/argocd-server 8080:80` and open
-<http://localhost:8080>. By default you sign in as `admin` with the password in
-the `argocd-initial-admin-secret` Secret.
+By default you sign in to Argo CD as `admin` with the password in the
+`argocd-initial-admin-secret` Secret.
 
 To sign in with GitHub instead:
 

@@ -1,4 +1,11 @@
 locals {
+  admin_access_facts = var.admin_access == null ? {} : {
+    adminAccess = {
+      tunnelTokenSecretName = var.admin_access.tunnel_token_secret_name
+      hostnames             = var.admin_access.hostnames
+    }
+  }
+
   cluster_facts = {
     environment = var.environment
     name        = var.cluster_name
@@ -102,7 +109,7 @@ locals {
             releaseName             = "bootstrap"
             valueFiles              = ["$values/environments/${var.environment}/bootstrap-values.yaml"]
             ignoreMissingValueFiles = true
-            valuesObject            = { cluster = local.cluster_facts }
+            valuesObject            = { cluster = merge(local.cluster_facts, local.admin_access_facts) }
           }
         },
         {

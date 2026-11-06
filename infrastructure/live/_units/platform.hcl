@@ -137,4 +137,6 @@ inputs = {
   github_sso = merge(local.account.argocd_github_sso, {
     client_secret_name = dependency.global.outputs.argocd_github_oauth_secret_name
   })
+
+  admin_access = try(dependency.global.outputs.admin_access[local.environment.environment], null)
 }

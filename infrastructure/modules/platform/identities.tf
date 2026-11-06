@@ -82,11 +82,14 @@ module "external_secrets" {
         "secretsmanager:GetSecretValue",
         "secretsmanager:ListSecretVersionIds",
       ]
-      resources = [
-        var.database.secret_arn,
-        var.grafana_admin_secret_arn,
-        "${format(local.regional_arn_prefix, "secretsmanager")}:secret:${var.slack_webhook_secret_name}-??????",
-      ]
+      resources = concat(
+        [
+          var.database.secret_arn,
+          var.grafana_admin_secret_arn,
+          "${format(local.regional_arn_prefix, "secretsmanager")}:secret:${var.slack_webhook_secret_name}-??????",
+        ],
+        var.admin_access == null ? [] : ["${format(local.regional_arn_prefix, "secretsmanager")}:secret:${var.admin_access.tunnel_token_secret_name}-??????"],
+      )
     },
     {
       sid       = "DecryptSecrets"
