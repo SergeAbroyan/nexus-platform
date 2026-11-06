@@ -13,6 +13,11 @@ output "cloudflare_zone_id" {
   value       = try(cloudflare_zone.this[0].id, null)
 }
 
+output "cloudflare_zone_active" {
+  description = "Whether Cloudflare has activated the zone; the Access applications, tunnel routes and admin DNS names are created on the first apply after it has."
+  value       = local.zone_active
+}
+
 output "cloudflare_name_servers" {
   description = "Name servers Cloudflare assigned to the zone, or null when Cloudflare is not configured."
   value       = try(cloudflare_zone.this[0].name_servers, null)
@@ -24,7 +29,7 @@ output "admin_access" {
     for environment in local.admin_environments : environment => {
       tunnel_id                = cloudflare_zero_trust_tunnel_cloudflared.admin[environment].id
       tunnel_token_secret_name = module.admin_tunnel_token[environment].secret_name
-      hostnames                = { for application in values(local.admin_applications) : application.tool => application.hostname if application.environment == environment }
+      hostnames                = { for tool in values(local.admin_tools) : tool.tool => tool.hostname if tool.environment == environment }
     }
   }
 }

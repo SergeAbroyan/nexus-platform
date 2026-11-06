@@ -34,7 +34,9 @@ which does not cover deeper names such as `argocd.dev.<domain>`.
 
 Every tool has its own Access application with one shared allow policy, and
 sign-in uses a one-time code sent by email, which needs no OAuth client
-secret. `cloudflared` validates the Access token of every request, so a
+secret. Access accepts only names in an active zone, so Terraform reads the
+zone status and creates the applications, tunnel routes and admin DNS names on
+the first apply after Cloudflare activates the zone. `cloudflared` validates the Access token of every request, so a
 missing or misconfigured Access application fails closed instead of exposing
 the tool.
 

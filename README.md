@@ -452,9 +452,9 @@ so that both DNS services hold the same records before the switch:
 
 3. In `identity.hcl`, set `cloudflare.account_id` and `cloudflare.access_team`,
    keep `dns_authoritative = false`, and apply `live/global`. Cloudflare now
-   holds the zone, the tunnel for each environment in
-   `admin_access.environments`, the Access applications, and their DNS names,
-   while Route 53 still answers for the domain.
+   holds the zone, still pending, the tunnel for each environment in
+   `admin_access.environments`, and the Access policy, while Route 53 still
+   answers for the domain.
 4. Copy each tunnel's token into its Secrets Manager secret. The pipe passes it
    from Cloudflare to AWS without printing it:
 
@@ -482,7 +482,17 @@ so that both DNS services hold the same records before the switch:
 
 7. Set `dns_authoritative = true` and apply `live/global` again. The domain
    now points at Cloudflare's name servers; resolvers move over within 48 hours,
-   and Cloudflare marks the zone active once it sees the change.
+   and Cloudflare marks the zone active once it sees the change, usually within
+   an hour, and sends an email.
+8. Once the zone is active, apply `live/global` once more. Access accepts only
+   names in an active zone, so the Access applications, the tunnel routes and
+   the admin DNS names wait for this apply; Terraform reads the zone status
+   itself. Check the status first with:
+
+   ```bash
+   curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+     "https://api.cloudflare.com/client/v4/zones?name=example.com" | jq -r '.result[0].status'
+   ```
 
 The tunnel and its token live in `global`, so destroying and recreating an
 environment keeps both. Rotating a token means running step 4 again and

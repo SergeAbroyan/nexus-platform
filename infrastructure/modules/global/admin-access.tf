@@ -1,7 +1,16 @@
+data "cloudflare_zones" "active" {
+  count = local.cloudflare_enabled ? 1 : 0
+
+  account = { id = var.cloudflare.account_id }
+  name    = var.domain_name
+  status  = "active"
+}
+
 locals {
   admin_environments = local.cloudflare_enabled ? var.admin_access.environments : toset([])
+  zone_active        = local.cloudflare_enabled && length(try(data.cloudflare_zones.active[0].result, [])) > 0
 
-  admin_applications = {
+  admin_tools = {
     for pair in setproduct(local.admin_environments, keys(var.admin_access.tools)) :
     "${pair[0]}-${pair[1]}" => {
       environment = pair[0]
@@ -10,6 +19,8 @@ locals {
       service     = var.admin_access.tools[pair[1]]
     }
   }
+
+  admin_applications = local.zone_active ? local.admin_tools : {}
 }
 
 resource "cloudflare_zero_trust_access_policy" "administrators" {

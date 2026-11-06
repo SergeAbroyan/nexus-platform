@@ -7,7 +7,7 @@ terraform {
   source = "${get_repo_root()}/infrastructure/modules/edge"
 
   before_hook "cloudflare_token" {
-    commands = local.account.cloudflare == null ? [] : ["apply", "destroy"]
+    commands = local.account.cloudflare == null ? [] : ["plan", "apply", "destroy"]
     execute  = ["sh", "-c", "test -n \"$CLOUDFLARE_API_TOKEN\" || { echo 'Cloudflare is configured but CLOUDFLARE_API_TOKEN is not set in this shell; run: read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN' >&2; exit 1; }"]
   }
 }
