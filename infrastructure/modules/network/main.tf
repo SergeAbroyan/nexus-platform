@@ -55,3 +55,17 @@ module "vpc" {
 
   tags = var.tags
 }
+
+data "aws_vpc_endpoint_service" "s3" {
+  service      = "s3"
+  service_type = "Gateway"
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = module.vpc.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.s3.service_name
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = concat(module.vpc.private_route_table_ids, module.vpc.database_route_table_ids)
+
+  tags = merge(var.tags, { Name = "${var.name}-s3" })
+}

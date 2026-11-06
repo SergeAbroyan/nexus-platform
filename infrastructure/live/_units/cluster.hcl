@@ -39,6 +39,7 @@ inputs = {
   endpoint_public_access_cidrs = distinct(concat(local.account.administrators.cidrs, [local.operator_cidr]))
 
   deletion_protection              = local.cluster.deletion_protection
+  control_plane_log_types          = local.cluster.control_plane_log_types
   control_plane_log_retention_days = local.cluster.control_plane_log_retention_days
   node_group                       = local.cluster.node_group
   karpenter                        = local.cluster.karpenter

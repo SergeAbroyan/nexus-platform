@@ -54,13 +54,7 @@ module "eks" {
   create_kms_key           = false
   attach_encryption_policy = true
 
-  enabled_log_types = [
-    "api",
-    "audit",
-    "authenticator",
-    "controllerManager",
-    "scheduler",
-  ]
+  enabled_log_types                      = var.control_plane_log_types
   cloudwatch_log_group_retention_in_days = var.control_plane_log_retention_days
 
   deletion_protection = var.deletion_protection

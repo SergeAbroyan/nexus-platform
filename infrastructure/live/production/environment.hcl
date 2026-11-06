@@ -34,6 +34,7 @@ locals {
   cluster = {
     kubernetes_version               = "1.36"
     deletion_protection              = true
+    control_plane_log_types          = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
     control_plane_log_retention_days = 30
 
     node_group = {

@@ -109,6 +109,20 @@ variable "deletion_protection" {
   nullable    = false
 }
 
+variable "control_plane_log_types" {
+  description = "EKS control-plane log types sent to CloudWatch Logs."
+  type        = list(string)
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for log_type in var.control_plane_log_types :
+      contains(["api", "audit", "authenticator", "controllerManager", "scheduler"], log_type)
+    ])
+    error_message = "Control-plane log types must be api, audit, authenticator, controllerManager or scheduler."
+  }
+}
+
 variable "control_plane_log_retention_days" {
   description = "Days CloudWatch retains EKS control-plane logs."
   type        = number
