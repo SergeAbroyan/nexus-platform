@@ -34,3 +34,6 @@ override.tf.json
 .idea/
 .vscode/
 *.swp
+
+# Personal values for one deployment; the template is identity.example.hcl
+infrastructure/live/identity.hcl

@@ -1,5 +1,6 @@
 locals {
-  identity = read_terragrunt_config("${get_terragrunt_dir()}/identity.hcl").locals
+  identity_configured = fileexists("${get_terragrunt_dir()}/identity.hcl")
+  identity            = read_terragrunt_config("${get_terragrunt_dir()}/${local.identity_configured ? "identity.hcl" : "identity.example.hcl"}").locals
 
   project_name   = "nexus"
   aws_account_id = local.identity.aws_account_id

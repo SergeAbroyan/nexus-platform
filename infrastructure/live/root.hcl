@@ -28,6 +28,11 @@ exclude {
 }
 
 terraform {
+  before_hook "identity_missing" {
+    commands = local.account.identity_configured ? [] : ["init", "plan", "apply", "destroy"]
+    execute  = ["sh", "-c", "echo 'infrastructure/live/identity.hcl is missing. Copy identity.example.hcl to identity.hcl and fill in your own values, as described in docs/getting-started.md.' >&2; exit 1"]
+  }
+
   before_hook "region_disabled" {
     commands = local.enabled ? [] : ["plan", "apply"]
     execute  = ["sh", "-c", "echo 'This region is disabled for this environment; set standby_enabled = true in environment.hcl to use it.' >&2; exit 1"]
