@@ -43,8 +43,8 @@ locals {
   }
 
   argocd_github_sso = {
-    enabled      = false
-    client_id    = ""
+    enabled      = local.identity.argocd_github_client_id != ""
+    client_id    = local.identity.argocd_github_client_id
     admin_logins = local.identity.administrators.github_logins
   }
 

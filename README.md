@@ -248,12 +248,15 @@ key, add its public key in GitHub, and increase
 
 To receive alerts in Slack as well as by email, create a Slack app with an
 incoming webhook for the alert channel, store its URL, and set
-`alerting.slack.enabled: true` in `nexus-gitops`:
+`alerting.slack.enabled: true` in `nexus-gitops`. The webhook URL is a secret,
+so read it without echoing and pass it on standard input, which keeps it out of
+the shell history and the process list:
 
 ```bash
-aws secretsmanager put-secret-value --region us-east-1 \
-  --secret-id nexus/alerts/slack-webhook-url \
-  --secret-string 'https://hooks.slack.com/services/...'
+read -rs WEBHOOK_URL
+printf '%s' "$WEBHOOK_URL" | aws secretsmanager put-secret-value --region us-east-1 \
+  --secret-id nexus/alerts/slack-webhook-url --secret-string file:///dev/stdin
+unset WEBHOOK_URL
 ```
 
 Deploy an environment:
@@ -505,22 +508,25 @@ By default you sign in to Argo CD as `admin` with the password in the
 
 To sign in with GitHub instead:
 
-1. In GitHub, open Settings → Developer settings → OAuth Apps → New OAuth App,
-   set the homepage to `http://localhost:8080` and the callback URL to
-   `http://localhost:8080/api/dex/callback`, and generate a client secret. One
-   app serves every cluster, because every cluster is reached the same way.
-2. Store the client secret:
+1. In GitHub, open Settings → Developer settings → OAuth Apps → New OAuth App.
+   Set the homepage to the Argo CD address and the callback URL to that address
+   followed by `/api/dex/callback`. With Cloudflare configured, the address is
+   `https://argocd-<environment>.<domain_name>`; without it, Argo CD is reached
+   through `kubectl port-forward` at `http://localhost:8080`. A GitHub OAuth app
+   has one callback URL, so each Argo CD address needs its own app. Generate a
+   client secret.
+2. Store the client secret without echoing it:
 
    ```bash
-   aws secretsmanager put-secret-value --region us-east-1 \
-     --secret-id nexus/argocd/github-oauth-client-secret \
-     --secret-string '<client secret>'
+   read -rs CLIENT_SECRET
+   printf '%s' "$CLIENT_SECRET" | aws secretsmanager put-secret-value --region us-east-1 \
+     --secret-id nexus/argocd/github-oauth-client-secret --secret-string file:///dev/stdin
+   unset CLIENT_SECRET
    ```
 
-3. In `account.hcl`, set `argocd_github_sso.enabled = true` and the app's
-   `client_id`; the administrators are `administrators.github_logins` in
-   `identity.hcl`. Then apply the
-   platform unit.
+3. In `identity.hcl`, set `argocd_github_client_id` to the app's client ID; an
+   empty value keeps GitHub sign-in off. The administrators are
+   `administrators.github_logins`. Then apply the platform unit.
 
 Terraform then enables Dex with a GitHub connector, gives the listed logins the
 `admin` role, gives everyone else no access, and disables the local `admin`

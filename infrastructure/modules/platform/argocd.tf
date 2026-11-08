@@ -4,7 +4,7 @@ locals {
   gitops_repository_secret = "argocd-repository-gitops"
 
   sso_config = local.github_sso ? {
-    url = "http://localhost:8080"
+    url = try("https://${var.admin_access.hostnames.argocd}", "http://localhost:8080")
     "dex.config" = yamlencode({
       connectors = [{
         type = "github"
