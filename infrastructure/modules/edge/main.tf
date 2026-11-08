@@ -4,10 +4,12 @@ module "certificate" {
 
   region = var.region
 
-  domain_name         = var.hostname
-  zone_id             = var.zone_id
-  validation_method   = "DNS"
-  wait_for_validation = true
+  domain_name             = var.hostname
+  zone_id                 = var.zone_id == null ? "" : var.zone_id
+  create_route53_records  = var.zone_id != null
+  validation_record_fqdns = var.zone_id == null ? [for record in cloudflare_dns_record.certificate_validation : record.name] : []
+  validation_method       = "DNS"
+  wait_for_validation     = true
 
   tags = merge(var.tags, { Name = var.hostname })
 }
@@ -198,6 +200,7 @@ locals {
 module "dns_records" {
   source  = "terraform-aws-modules/route53/aws"
   version = "6.5.1"
+  count   = var.zone_id == null ? 0 : 1
 
   create_zone = false
   name        = var.zone_name
@@ -224,6 +227,11 @@ module "dns_records" {
   }
 
   tags = var.tags
+}
+
+moved {
+  from = module.dns_records
+  to   = module.dns_records[0]
 }
 
 resource "cloudflare_dns_record" "certificate_validation" {

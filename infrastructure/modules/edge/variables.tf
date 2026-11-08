@@ -28,9 +28,14 @@ variable "region" {
 }
 
 variable "zone_id" {
-  description = "Route 53 hosted-zone ID that validates the certificate and holds the application aliases."
+  description = "Route 53 hosted-zone ID that validates the certificate and holds the application aliases, or null when Cloudflare serves the domain alone."
   type        = string
-  nullable    = false
+  default     = null
+
+  validation {
+    condition     = var.zone_id != null || var.cloudflare_zone_id != null
+    error_message = "The edge needs a DNS zone for the certificate and the application record: a Route 53 zone, a Cloudflare zone, or both."
+  }
 }
 
 variable "zone_name" {

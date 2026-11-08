@@ -1,21 +1,16 @@
 output "zone_id" {
-  description = "Route 53 hosted-zone ID."
-  value       = module.zone.id
+  description = "Route 53 hosted-zone ID, or null when Cloudflare serves the domain and the Route 53 zone has been removed."
+  value       = try(module.zone[0].id, null)
 }
 
 output "name_servers" {
   description = "Name servers to configure at the domain registrar: Cloudflare's once it serves the zone, otherwise Route 53's."
-  value       = local.cloudflare_serves ? cloudflare_zone.this[0].name_servers : module.zone.name_servers
+  value       = local.cloudflare_serves ? cloudflare_zone.this[0].name_servers : module.zone[0].name_servers
 }
 
 output "cloudflare_zone_id" {
   description = "Cloudflare zone ID of the public domain, or null when Cloudflare is not configured."
   value       = try(cloudflare_zone.this[0].id, null)
-}
-
-output "cloudflare_zone_active" {
-  description = "Whether Cloudflare has activated the zone; the Access applications, tunnel routes and admin DNS names are created on the first apply after it has."
-  value       = local.zone_active
 }
 
 output "cloudflare_name_servers" {

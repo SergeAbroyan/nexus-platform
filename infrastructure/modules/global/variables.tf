@@ -28,7 +28,7 @@ variable "standby_region" {
 }
 
 variable "domain_name" {
-  description = "Public domain delegated to the Route 53 hosted zone."
+  description = "Public domain served by the Route 53 hosted zone, or by Cloudflare when configured."
   type        = string
   nullable    = false
 
@@ -156,12 +156,13 @@ variable "security_hub_enabled" {
 }
 
 variable "cloudflare" {
-  description = "Cloudflare account that hosts the public DNS zone and the Zero Trust sign-in for admin tools, or null to keep DNS on Route 53 only. dns_authoritative points the registrar at Cloudflare."
+  description = "Cloudflare account that hosts the public DNS zone and the Zero Trust sign-in for admin tools, or null to keep DNS on Route 53 only. dns_authoritative points the registrar at Cloudflare; keep_route53_zone keeps the old Route 53 zone while resolvers move over."
   type = object({
     account_id        = string
     access_team       = string
     access_emails     = list(string)
     dns_authoritative = bool
+    keep_route53_zone = optional(bool, false)
   })
   default = null
 

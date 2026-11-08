@@ -5,14 +5,16 @@ locals {
   terraform_state_bucket_arn = "arn:${local.partition}:s3:::${var.terraform_state_bucket_name}"
 }
 
-module "github_oidc_provider" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-oidc-provider"
-  version = "6.8.2"
-
+resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
 
   tags = var.tags
+}
+
+moved {
+  from = module.github_oidc_provider.aws_iam_openid_connect_provider.this[0]
+  to   = aws_iam_openid_connect_provider.github
 }
 
 module "application_ci" {
@@ -52,7 +54,7 @@ module "application_ci" {
 
   tags = var.tags
 
-  depends_on = [module.github_oidc_provider]
+  depends_on = [aws_iam_openid_connect_provider.github]
 }
 
 module "infrastructure_ci" {
@@ -129,5 +131,5 @@ module "infrastructure_ci" {
 
   tags = var.tags
 
-  depends_on = [module.github_oidc_provider]
+  depends_on = [aws_iam_openid_connect_provider.github]
 }

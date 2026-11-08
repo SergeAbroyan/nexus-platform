@@ -12,13 +12,3 @@ output "distribution_id" {
   description = "CloudFront distribution ID."
   value       = module.cloudfront.cloudfront_distribution_id
 }
-
-output "distribution_domain_name" {
-  description = "CloudFront-generated domain name."
-  value       = module.cloudfront.cloudfront_distribution_domain_name
-}
-
-output "web_acl_arn" {
-  description = "CloudFront WAF web ACL ARN."
-  value       = module.waf.web_acl_arn
-}
