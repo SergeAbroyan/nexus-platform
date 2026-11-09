@@ -31,6 +31,7 @@ locals {
     load_balancer_controller = { namespace = "kube-system", name = "aws-load-balancer-controller" }
     external_secrets         = { namespace = "external-secrets", name = "external-secrets" }
     kyverno                  = { namespace = "kyverno", name = "kyverno-admission-controller" }
+    kyverno_reports          = { namespace = "kyverno", name = "kyverno-reports-controller" }
     keda                     = { namespace = "keda", name = "keda-operator" }
     trivy_operator           = { namespace = "trivy-system", name = "trivy-operator" }
     velero                   = { namespace = "velero", name = "velero-server" }
@@ -115,7 +116,7 @@ module "kyverno" {
 
   name            = "${var.name}-kyverno"
   use_name_prefix = false
-  description     = "Pod Identity role for the Kyverno admission controller"
+  description     = "Pod Identity role for the Kyverno admission and reports controllers"
 
   attach_custom_policy      = true
   custom_policy_description = "Read Nexus images and their signatures from ECR"
@@ -126,6 +127,11 @@ module "kyverno" {
       cluster_name    = var.cluster_name
       namespace       = local.service_accounts.kyverno.namespace
       service_account = local.service_accounts.kyverno.name
+    }
+    reports_controller = {
+      cluster_name    = var.cluster_name
+      namespace       = local.service_accounts.kyverno_reports.namespace
+      service_account = local.service_accounts.kyverno_reports.name
     }
   }
 
