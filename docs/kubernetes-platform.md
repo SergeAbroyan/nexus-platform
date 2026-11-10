@@ -37,8 +37,8 @@ add-ons that use them run in those namespaces. `values.schema.json` in the
 fails the render. Application secrets never pass through Terraform state or
 Git; External Secrets reads them from Secrets Manager with EKS Pod Identity.
 
-`nexus-gitops` is private, so Argo CD reads it over SSH with a read-only GitHub
-deploy key. The key lives in the Secrets Manager secret
+Argo CD reads `nexus-gitops` over SSH with a read-only GitHub deploy key, so
+the repository can be public or private. The key lives in the Secrets Manager secret
 `nexus/argocd/gitops-deploy-key`, which `global` creates and replicates to the
 standby region. The platform unit reads it as an ephemeral value and hands it to
 the Argo CD release as a write-only Helm value, so it is never written to
