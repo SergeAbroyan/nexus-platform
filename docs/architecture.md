@@ -87,7 +87,6 @@ infrastructure/
 ├── validate.yaml             Formatting, validation, TFLint, and Checkov
 ├── deploy.yaml               Plan or apply one environment on demand
 └── infracost.yaml            Monthly cost change of every pull request
-renovate.json                 Dependency updates for modules, providers, tools, and actions
 .pre-commit-config.yaml       Local checks before every commit
 docs/                         Getting started, architecture, operations, security, cost, CI
 └── adr/                      Architecture decision records

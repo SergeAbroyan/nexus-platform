@@ -39,11 +39,9 @@ demand with GitHub OIDC. Apply `global` manually first, then:
   reviewer for its `Deploy` workflow
 
 The application pipeline pushes images to `us-east-1`; ECR replicates them to
-`us-west-2`. Actions are pinned to commit SHAs with their version alongside.
-Renovate opens a weekly pull request per group: Terraform modules, Terraform
-providers, the Argo CD chart, the Terraform, Terragrunt, and TFLint versions in
-CI, and the actions; lock files are refreshed monthly. Gitleaks scans pull
-requests for committed secrets, and `.gitleaksignore` lists the one historical
-false positive. Install the local hooks once with `pre-commit install`. The
-infrastructure CI roles have broad permissions; narrow them from CloudTrail
-once real deployment behavior is known.
+`us-west-2`. Actions are pinned to commit SHAs with their version alongside,
+and Terraform modules, providers, and tool versions are pinned in code.
+Gitleaks scans pull requests for committed secrets, and `.gitleaksignore` lists
+the one historical false positive. Install the local hooks once with
+`pre-commit install`. The infrastructure CI roles have broad permissions;
+narrow them from CloudTrail once real deployment behavior is known.
