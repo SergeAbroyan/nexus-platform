@@ -39,6 +39,24 @@ cd infrastructure/live/dev
 terragrunt run --all destroy
 ```
 
+If the `cluster` unit then stops on its node security group with
+`DependencyViolation`, the VPC CNI left network interfaces behind for nodes
+that no longer exist. They are detached, named `aws-K8S-<instance ID>`, and
+safe to delete once their instances are terminated:
+
+```bash
+aws ec2 describe-network-interfaces --region us-east-1 \
+  --filters Name=status,Values=available Name=description,Values='aws-K8S-*' \
+  --query 'NetworkInterfaces[].NetworkInterfaceId' --output text \
+  | xargs -n1 aws ec2 delete-network-interface --region us-east-1 --network-interface-id
+```
+
+Run the destroy again in the units that still have resources. A
+`run --all destroy` cannot restart once the units at the top of the order are
+gone, because they no longer have outputs for the units below them to read, so
+destroy the remaining units one by one, starting with `cluster`, with
+`terragrunt destroy` in each unit's folder.
+
 With GuardDuty enabled, its runtime agent creates a VPC endpoint and a
 security group in each cluster VPC that Terraform does not own. Set
 `guardduty_enabled = false`, apply `global`, and delete the VPC endpoints for
