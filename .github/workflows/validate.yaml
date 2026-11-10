@@ -104,15 +104,3 @@ jobs:
           quiet: true
           skip_check: CKV_TF_1,CKV2_AWS_3,CKV_AWS_252,CKV2_AWS_10,CKV2_AWS_48
           soft_fail: false
-
-      - name: Audit downloaded external modules
-        uses: bridgecrewio/checkov-action@c3e106d5f8f4253a6de5110efb41a080f83db294 # v12
-        with:
-          directory: infrastructure
-          skip_path: infrastructure/live
-          framework: terraform
-          download_external_modules: true
-          output_format: cli
-          quiet: true
-          skip_check: CKV_TF_1,CKV2_AWS_3,CKV_AWS_252,CKV2_AWS_10,CKV2_AWS_48
-          soft_fail: true

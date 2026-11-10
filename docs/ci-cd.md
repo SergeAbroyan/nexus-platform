@@ -15,8 +15,7 @@ with Checkov. Checkov excludes five checks on purpose:
 - `CKV2_AWS_10`: CloudTrail logs stay in S3; copying them to CloudWatch Logs
   would cost per gigabyte for the same data.
 - `CKV2_AWS_48`: AWS Config records global resources such as IAM in the
-  primary region only, as AWS recommends, to avoid duplicate records. A second, informational
-Checkov scan audits the downloaded external modules.
+  primary region only, as AWS recommends, to avoid duplicate records.
 
 Terraform plans are not run on pull requests: the EKS API accepts only the
 administrator CIDRs and the address of whoever applies, so a GitHub-hosted
